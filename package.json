@@ -1,0 +1,17 @@
+{
+  "name": "binance-connector",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "DucHoang",
+  "license": "ISC",
+  "dependencies": {
+    "binance": "^2.13.18",
+    "commander": "^2.20.3",
+    "moment": "^2.30.1",
+    "shelljs": "^0.8.5"
+  }
+}
