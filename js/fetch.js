@@ -4,7 +4,6 @@
 const binance = require('binance');
 const path = require('path');
 const shell = require('shelljs');
-const program = require('commander');
 const fs = require('fs');
 const moment = require('moment');
 
@@ -19,14 +18,7 @@ if (!key || !key.apiKey || !key.secretKey) {
     throw new Error('Key not found');
 }
 
-/** Create prompt for script */
-program.version('0.1.0')
-    .option('-D, --deleteBeforeExport', 'Delete all exported files in the past before exporting new files')
-    .option('-p, --path [export-path]', 'Configure export folder path', 'ignore')
-    .option('-s, --symbol [type]', 'Configure coin symbol', 'BTC')
-    .option('-i, --interval [type]', 'Configure chart interval', '5m')
-    .option('-f, --frame [type]', 'Configure how many frame to loop', 1)
-    .parse(process.argv);
+const program = require('./scripts/input/prompt');
 
 /** Define global variables */
 const cwd = process.cwd();
