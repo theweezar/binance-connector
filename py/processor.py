@@ -31,7 +31,6 @@ def process(frame: pandas.DataFrame):
 
     ema_34_x_ema_89 = (ema_34 - ema_89).abs()
 
-    # TODO: ema_34 crosses ema_89 is incorrect. Need to investigate and fix
     frame["ema_34_x_ema_89"] = (ema_34_x_ema_89 <= 75).astype(int).astype(str)
 
     return frame
