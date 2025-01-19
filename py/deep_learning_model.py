@@ -12,19 +12,33 @@ from sklearn.model_selection import train_test_split
 time_steps = 60
 threshold = 0.5
 
+
 def create_sequences(features, target, time_steps):
     X, y = [], []
     for i in range(len(features) - time_steps):
-        X.append(features[i:i + time_steps])
+        X.append(features[i : i + time_steps])
         y.append(target[i + time_steps])
     return np.array(X), np.array(y)
+
 
 def preprocessing_x_y_data():
     csv = util.get_csv()
     data = csv["data_frame"]
 
     # Raw X values
-    features = data[["Open", "High", "Low", "Close", "Volume", "rsi_7", "rsi_14", "ema_34", "ema_89"]]
+    features = data[
+        [
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "rsi_7",
+            "rsi_14",
+            "ema_34",
+            "ema_89",
+        ]
+    ]
 
     # Binary classification -> Up/Down -> raw y values
     target = (data["Type"] == "U").astype(int)
@@ -37,23 +51,34 @@ def preprocessing_x_y_data():
 
     return X, y
 
+
 def train_data(x, y):
     # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False)
+    X_train, X_test, y_train, y_test = train_test_split(
+        x, y, test_size=0.2, shuffle=False
+    )
 
     # Build the LSTM model
-    model = Sequential([
-        LSTM(50, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
-        Dropout(0.2),
-        LSTM(50),
-        Dropout(0.2),
-        Dense(1, activation="sigmoid")  # Binary classification
-    ])
+    model = Sequential(
+        [
+            LSTM(
+                50,
+                return_sequences=True,
+                input_shape=(X_train.shape[1], X_train.shape[2]),
+            ),
+            Dropout(0.2),
+            LSTM(50),
+            Dropout(0.2),
+            Dense(1, activation="sigmoid"),  # Binary classification
+        ]
+    )
 
     model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test))
+    history = model.fit(
+        X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test)
+    )
 
     print(f"training loss: {history.history["loss"]}")
 
@@ -65,12 +90,14 @@ def train_data(x, y):
 
     return model
 
+
 def print_predict_summary(predict):
     applied_threshold_predict = (predict > threshold).astype(int)
 
     print(f"predict: {predict}")
     print(f"applied_threshold_predict: {applied_threshold_predict}")
     print(f"argmax predict: {np.argmax(predict)}")
+
 
 X, y = preprocessing_x_y_data()
 
@@ -79,7 +106,7 @@ trained_model = train_data(X, y)
 # model_local_path = os.path.join(util.get_export_dir(), "trained_model.keras")
 # trained_model.export(model_local_path)
 
-predict = trained_model.predict(X[len(X) - (time_steps + 1):len(X) - 1])
+predict = trained_model.predict(X[len(X) - (time_steps + 1) : len(X) - 1])
 
 print_predict_summary(predict)
 

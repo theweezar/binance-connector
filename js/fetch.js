@@ -9,13 +9,14 @@ const moment = require('moment');
 
 /** Scripts, variables */
 const symbol = require('./config/symbol.json');
-const key = require('./config/credentials.json');
+const credentials = require('./scripts/input/credentials');
 const Klines = require('./models/klines');
 const CSV = require('./scripts/csv');
 
 /** Check credentials */
+const key = credentials.getBinanceCredentials();
 if (!key || !key.apiKey || !key.secretKey) {
-    throw new Error('Key not found');
+    throw new Error('Binance key not found');
 }
 
 const program = require('./scripts/input/prompt');

@@ -20,7 +20,9 @@ y_vols = np.array(frame["Volume"])
 # Plot 2 charts, plot the prices and the trendline
 view = View(3, y_prices)
 
-view.get_chart(0).show_chart(xlabel=f"{symbol} Last").show_trendline().show_ema(34, "green").show_ema(89, "blue")
+view.get_chart(0).show_chart(xlabel=f"{symbol} Last").show_trendline().show_ema(
+    34, "green"
+).show_ema(89, "blue")
 
 view.get_chart(1).show_rsi(7).show_trendline()
 

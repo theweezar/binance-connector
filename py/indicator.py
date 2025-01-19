@@ -2,6 +2,7 @@ import numpy as np
 import pandas
 import math
 
+
 def calc_rsi(prices: pandas.Series, period: int):
     """
     Calculate RSI
@@ -13,7 +14,7 @@ def calc_rsi(prices: pandas.Series, period: int):
     Returns:
         Series: RSI Series
     """
-    
+
     # Calc diff = Curr price - Prev price
     diff_prices = prices.diff()
 
@@ -27,8 +28,8 @@ def calc_rsi(prices: pandas.Series, period: int):
 
     # Calculate smoothed averages for subsequent periods
     for i in range(period, len(prices)):
-        avg_gain[i] = ((avg_gain[i-1] * (period - 1)) + gains[i]) / period
-        avg_loss[i] = ((avg_loss[i-1] * (period - 1)) + losses[i]) / period
+        avg_gain[i] = ((avg_gain[i - 1] * (period - 1)) + gains[i]) / period
+        avg_loss[i] = ((avg_loss[i - 1] * (period - 1)) + losses[i]) / period
 
     # Calculate Relative Strength (RS)
     rs = avg_gain / avg_loss
@@ -39,22 +40,23 @@ def calc_rsi(prices: pandas.Series, period: int):
 
     return rsi
 
+
 def calc_ema(prices, period):
     """
     Calculate the Exponential Moving Average (EMA) for a given dataset.
-    
+
     Args:
         prices (list or pandas.Series): List of price data (closing prices).
         period (int): The number of periods for the EMA.
-    
+
     Returns:
         pandas.Series: EMA values for the given price data.
     """
     # Convert prices to a pandas Series if it's not already
 
     this_prices = pandas.Series(prices) if type(prices) is not pandas.Series else prices
-    
+
     # Calculate EMA using pandas' built-in function
     ema = this_prices.ewm(span=period, adjust=False).mean()
-    
+
     return ema
