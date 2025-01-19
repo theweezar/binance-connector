@@ -32,7 +32,7 @@ def process(frame: pandas.DataFrame):
     ema_34_x_ema_89 = (ema_34 - ema_89).abs()
 
     # TODO: ema_34 crosses ema_89 is incorrect. Need to investigate and fix
-    frame["ema_34_x_ema_89"] = (ema_34_x_ema_89 <= 10).astype(int).astype(str)
+    frame["ema_34_x_ema_89"] = (ema_34_x_ema_89 <= 75).astype(int).astype(str)
 
     return frame
 
@@ -60,10 +60,15 @@ def detect_ema_signal(frame: pandas.DataFrame):
         ema_34 = frame["ema_34"][ema_x_last_index]
         ema_89 = frame["ema_89"][ema_x_last_index]
 
-        signal_dict["ema_34"] = ema_34
-        signal_dict["ema_89"] = ema_89
+        signal_dict["ema34"] = ema_34
+        signal_dict["ema89"] = ema_89
 
-        signal_dict["direction"] = "Up" if ema_34 <= ema_89 else "Down"
+        if ema_x_last_index > 0:
+            prev_ema_34 = frame["ema_34"][ema_x_last_index - 1]
+            prev_ema_89 = frame["ema_89"][ema_x_last_index - 1]
+            signal_dict["direction"] = "Up" if prev_ema_34 <= prev_ema_89 else "Down"
+        else:
+            signal_dict["direction"] = "Up" if ema_34 <= ema_89 else "Down"
 
     return signal_dict
 
