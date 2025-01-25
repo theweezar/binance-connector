@@ -46,4 +46,6 @@ view.get_chart(2).set_text(
     """
 )
 
-view.show()
+view.export()
+
+# view.show()

@@ -41,7 +41,7 @@ def calc_rsi(prices: pandas.Series, period: int):
     return rsi
 
 
-def calc_ema(prices, period):
+def calc_ema(prices: list | pandas.Series, period: int):
     """
     Calculate the Exponential Moving Average (EMA) for a given dataset.
 
@@ -60,3 +60,45 @@ def calc_ema(prices, period):
     ema = this_prices.ewm(span=period, adjust=False).mean()
 
     return ema
+
+
+def calc_price_if_rsi_reach_to(
+    prices: pandas.Series, desired_rsi: float, period: int, price_offset: int
+):
+    this_prices = prices.copy()
+    current_rsi = calc_rsi(this_prices, period)
+
+    length = len(current_rsi)
+
+    if current_rsi[length - 1] >= desired_rsi:
+        return this_prices[length - 1]
+
+    this_rsi = current_rsi[length - 1]
+
+    while this_rsi < desired_rsi:
+        this_prices[length - 1] = this_prices[length - 1] + price_offset
+        rsi_add_offset = calc_rsi(this_prices, period)
+        this_rsi = rsi_add_offset[length - 1]
+
+    return this_prices[length - 1]
+
+
+def calc_price_if_rsi_drop_to(
+    prices: pandas.Series, desired_rsi: float, period: int, price_offset: int
+):
+    this_prices = prices.copy()
+    current_rsi = calc_rsi(this_prices, period)
+
+    length = len(current_rsi)
+
+    if current_rsi[length - 1] < desired_rsi:
+        return this_prices[length - 1]
+
+    this_rsi = current_rsi[length - 1]
+
+    while this_rsi > desired_rsi:
+        this_prices[length - 1] = this_prices[length - 1] - price_offset
+        rsi_minus_offset = calc_rsi(this_prices, period)
+        this_rsi = rsi_minus_offset[length - 1]
+
+    return this_prices[length - 1]

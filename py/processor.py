@@ -72,6 +72,40 @@ def detect_ema_signal(frame: pandas.DataFrame):
     return signal_dict
 
 
+def detect_rsi_signal(frame: pandas.DataFrame):
+    y_prices = frame["Close"]
+
+    period = 14
+    offset = 100
+
+    reach_list = [70, 75, 80, 90]
+    reach_list_dict = []
+
+    drop_list = [30, 25, 20, 15]
+    drop_list_dict = []
+
+    for i in range(len(reach_list)):
+        price_if_rsi_reach = indicator.calc_price_if_rsi_reach_to(
+            y_prices, float(reach_list[i]), period, offset
+        )
+        this_dict = {"rsi": reach_list[i], "priceIfRSIReach": price_if_rsi_reach}
+        reach_list_dict.append(this_dict)
+
+    for i in range(len(drop_list)):
+        price_if_rsi_drop = indicator.calc_price_if_rsi_drop_to(
+            y_prices, float(drop_list[i]), period, offset
+        )
+        this_dict = {"rsi": drop_list[i], "priceIfRSIReach": price_if_rsi_drop}
+        drop_list_dict.append(this_dict)
+
+    return {
+        "period": period,
+        "offset": offset,
+        "reach_list_dict": reach_list_dict,
+        "drop_list_dict": drop_list_dict,
+    }
+
+
 def update_existing_api(frame: pandas.DataFrame) -> dict:
     lastest_data = {}
     last_idx = len(frame) - 1
@@ -82,9 +116,18 @@ def update_existing_api(frame: pandas.DataFrame) -> dict:
 
     api_data = util.get_api()
     ema_signal_dict = detect_ema_signal(frame)
+    rsi_signal_dict = detect_rsi_signal(frame)
 
-    api_data["signal"] = {}
-    api_data["signal"]["ema34XEma89"] = ema_signal_dict
+    api_data["signal"] = {
+        "ema34XEma89": ema_signal_dict,
+        "futureRSI": {
+            "period": rsi_signal_dict["period"],
+            "offset": rsi_signal_dict["offset"],
+            "reach": rsi_signal_dict["reach_list_dict"],
+            "drop": rsi_signal_dict["drop_list_dict"],
+        },
+    }
+
     api_data["processor"] = lastest_data
 
     return api_data
