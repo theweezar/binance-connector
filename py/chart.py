@@ -74,7 +74,7 @@ class Chart:
         self.plt.set_xticks([])
         self.plt.set_yticks([])
         self.plt.axis('off')
-        self.plt.text(0, 0.8, text)
+        self.plt.text(0, 0.8, text).set_fontsize("xx-large")
 
         return self
         

@@ -20,9 +20,9 @@ y_vols = np.array(frame["Volume"])
 # Plot 2 charts, plot the prices and the trendline
 view = View(3, y_prices)
 
-view.get_chart(0).show_chart(xlabel=f"{symbol} Last").show_trendline().show_ema(
-    34, "green"
-).show_ema(89, "blue")
+view.get_chart(0).show_chart(
+    xlabel=f'{symbol} From "{open_time}" to "{close_time}"'
+).show_trendline().show_ema(34, "green").show_ema(89, "blue")
 
 view.get_chart(1).show_rsi(7).show_trendline()
 
@@ -30,19 +30,13 @@ view.get_chart(1).show_rsi(7).show_trendline()
 
 view.get_chart(2).set_text(
     f"""
-    File: {csv_file_name}
-
-    symbol: {symbol}
-
-    open_time: {open_time}
-
-    close_time: {close_time}
-    
-    count: 500
-
-    ema(34): green
-
-    ema(89): blue
+    - file: {csv_file_name}
+    - symbol: {symbol}
+    - open time (GMT): {open_time}
+    - close time (GMT): {close_time}
+    - count: 500
+    - ema(34): green
+    - ema(89): blue
     """
 )
 

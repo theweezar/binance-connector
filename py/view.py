@@ -1,12 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import util
+import os
 from chart import Chart
 
 
 class View:
     def __init__(self, number_of_chart, initial_chart_nd_array: np.ndarray):
         figure, axs = plt.subplots(
-            number_of_chart, 1, sharex="col", layout="constrained", figsize=(10, 10)
+            number_of_chart, 1, sharex="col", layout="constrained", figsize=(10, 12)
         )
         self.number_of_chart = number_of_chart
         self.charts = []
@@ -24,5 +26,12 @@ class View:
         plt.show()
 
     def export(self):
-        self.figure.savefig("figure.png")
+        export_dir = util.get_export_dir()
+        image_dir = os.path.join(export_dir, "image")
+
+        if not os.path.exists(image_dir):
+            os.makedirs(image_dir)
+
+        save_path = os.path.join(image_dir, "figure.png")
+        self.figure.savefig(save_path)
         plt.close(self.figure)

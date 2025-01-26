@@ -75,7 +75,7 @@ def detect_ema_signal(frame: pandas.DataFrame):
 def detect_rsi_signal(frame: pandas.DataFrame):
     y_prices = frame["Close"]
 
-    period = 14
+    period = 7
     offset = 100
 
     reach_list = [70, 75, 80, 90]
