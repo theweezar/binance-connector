@@ -35,8 +35,8 @@ class Chart:
 
     def show_chart(self, xlabel="Last", ylabel="Price"):
         self.plt.plot(self.x_nd_timestamps, self.initial_nd_array, color="black")
-        self.plt.set_xlabel(f"{xlabel}: {self.initial_nd_array[-1]}")
-        self.plt.set_ylabel(ylabel)
+        self.plt.set_xlabel(f"{xlabel}: {self.initial_nd_array[-1]}").set_fontsize("x-large")
+        self.plt.set_ylabel(ylabel).set_fontsize("x-large")
         self.plt.grid(linestyle='--')
         return self
 
@@ -52,8 +52,8 @@ class Chart:
         self.plt.plot(self.x_nd_timestamps, rsi_nd_array, color="black")
         self.plt.plot(self.x_nd_timestamps, upper, color="green")
         self.plt.plot(self.x_nd_timestamps, lower, color="green")
-        self.plt.set_xlabel(f"RSI({period}): {round(rsi_nd_array[-1], 2)}")
-        self.plt.set_ylabel("RSI")
+        self.plt.set_xlabel(f"RSI({period}): {round(rsi_nd_array[-1], 2)}").set_fontsize("x-large")
+        self.plt.set_ylabel("RSI").set_fontsize("x-large")
         self.plt.set_ylim(ymin=0, ymax=100)
         self.plt.grid(linestyle='--')
         self.plt.set_yticks(y_ticks)

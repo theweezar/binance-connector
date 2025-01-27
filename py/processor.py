@@ -75,8 +75,21 @@ def detect_ema_signal(frame: pandas.DataFrame):
 def detect_rsi_signal(frame: pandas.DataFrame):
     y_prices = frame["Close"]
 
+    symbol = frame["Symbol"][0]
+
     period = 7
-    offset = 100
+
+    offsets = {
+        "BTCUSDT": 100,
+        "ETHUSDT": 10,
+        "XRPUSDT": 0.01,
+        "BNBUSDT": 1,
+        "DOGEUSDT": 0.01,
+        "PEPEUSDT": 0.01,
+        "ADAUSDT": 0.01,
+    }
+
+    offset = offsets[symbol]
 
     reach_list = [70, 75, 80, 90]
     reach_list_dict = []

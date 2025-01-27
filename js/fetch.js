@@ -107,7 +107,7 @@ const exportLastestAPI = (klineArray) => {
             params.endTime = slot.endTime;
         }
 
-        // https://developers.binance.com/docs/binance-spot-api-docs/rest-api/public-api-endpoints#klinecandlestick-data
+        // https://developers.binance.com/docs/derivatives/coin-margined-futures/market-data/Kline-Candlestick-Data
         const klineData = await client.getKlines(params).catch(error => {
             console.error(error);
         });

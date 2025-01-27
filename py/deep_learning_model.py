@@ -1,11 +1,13 @@
 import util
 import os
 import numpy as np
+from colorama import Fore, Style
 from keras.src.models.sequential import Sequential
 from keras.src.layers.rnn.lstm import LSTM
 from keras.src.layers.core.dense import Dense
 from keras.src.layers.regularization.dropout import Dropout
 from keras.src.saving import load_model
+from keras.src.callbacks.history import History
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
@@ -32,9 +34,10 @@ def preprocessing_x_y_data():
             "High",
             "Low",
             "Close",
-            "Volume",
+            # "Volume",
             "rsi_7",
             "rsi_14",
+            "rsi_30",
             "ema_34",
             "ema_89",
         ]
@@ -80,35 +83,48 @@ def train_data(x, y):
         X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test)
     )
 
-    print(f"training loss: {history.history["loss"]}")
-
-    # Evaluate/test the model
-    loss, accuracy = model.evaluate(X_test, y_test)
-
-    print(f"test loss: {loss}")
-    print(f"test accuracy: {accuracy}")
-
-    return model
+    return model, history
 
 
-def print_predict_summary(predict):
-    applied_threshold_predict = (predict > threshold).astype(int)
+def print_predict_summary(predict: np.ndarray, history: History):
+    # applied_threshold_predict = (predict > threshold).astype(int)
+    history_dict = history.history
 
-    print(f"predict: {predict}")
-    print(f"applied_threshold_predict: {applied_threshold_predict}")
-    print(f"argmax predict: {np.argmax(predict)}")
+    accuracy = history_dict.get("accuracy")
+    loss = history_dict.get("loss")
+    val_accuracy = history_dict.get("val_accuracy")
+    val_loss = history_dict.get("val_loss")
+
+    print(
+        f"\n{Fore.YELLOW}argmax accuracy:{Style.RESET_ALL} {accuracy[np.argmax(accuracy)]}"
+    )
+    print(f"\n{Fore.YELLOW}argmax loss:{Style.RESET_ALL} {loss[np.argmax(loss)]}")
+    print(
+        f"\n{Fore.YELLOW}argmax val_accuracy:{Style.RESET_ALL} {val_accuracy[np.argmax(val_accuracy)]}"
+    )
+    print(
+        f"\n{Fore.YELLOW}argmax val_loss:{Style.RESET_ALL} {val_loss[np.argmax(val_loss)]}"
+    )
+
+    predict_value = predict[np.argmax(predict)]
+
+    # print(f"\n{Fore.GREEN}predict:{Style.RESET_ALL} {" ".join(map(str, predict))}")
+    print(f"\n{Fore.GREEN}argmax predict:{Style.RESET_ALL} {predict_value}")
+    print(
+        f"\n{Fore.GREEN}predict direction:{Style.RESET_ALL} {"Up" if predict_value > 0.5 else "Down"}"
+    )
 
 
 X, y = preprocessing_x_y_data()
 
-trained_model = train_data(X, y)
+model, history = train_data(X, y)
 
-# model_local_path = os.path.join(util.get_export_dir(), "trained_model.keras")
-# trained_model.export(model_local_path)
+# model_local_path = os.path.join(util.get_export_dir(), "model.keras")
+# model.export(model_local_path)
 
-predict = trained_model.predict(X[len(X) - (time_steps + 1) : len(X) - 1])
+predict = model.predict(X[len(X) - (time_steps + 1) : len(X) - 1])
 
-print_predict_summary(predict)
+print_predict_summary(predict, history)
 
 # loaded_model = load_model(model_local_path)
 
