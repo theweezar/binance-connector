@@ -18,7 +18,11 @@ const getCredentials = (name) => {
  * @returns {Object} - Binance credentials object
  */
 const getBinanceCredentials = () => {
-    return getCredentials('binance');
+    const key = getCredentials('binance');
+    if (!key || !key.apiKey || !key.secretKey) {
+        throw new Error('Binance key not found');
+    }
+    return key;
 }
 
 /**
