@@ -3,21 +3,20 @@ import os
 import numpy as np
 from colorama import Fore, Style
 from keras.src.models.sequential import Sequential
+from keras.src.layers import Bidirectional
 from keras.src.layers.rnn.lstm import LSTM
 from keras.src.layers.core.dense import Dense
 from keras.src.layers.regularization.dropout import Dropout
 from keras.src.saving import load_model
 from keras.src.callbacks.history import History
+from keras.src.optimizers import Adam
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-
-time_steps = 60
-threshold = 0.5
 
 
 def create_sequences(features, target, time_steps):
     X, y = [], []
-    for i in range(len(features) - time_steps):
+    for i in range(len(features) - time_steps * 2):
         X.append(features[i : i + time_steps])
         y.append(target[i + time_steps])
     return np.array(X), np.array(y)
@@ -30,16 +29,17 @@ def preprocessing_x_y_data():
     # Raw X values
     features = data[
         [
-            "Open",
-            "High",
-            "Low",
             "Close",
-            # "Volume",
+            "price_change",
+            "volatility",
+            "ema_trend",
             "rsi_7",
             "rsi_14",
             "rsi_30",
             "ema_34",
             "ema_89",
+            "macd",
+            "macd_signal"
         ]
     ]
 
@@ -55,7 +55,7 @@ def preprocessing_x_y_data():
     return X, y
 
 
-def train_data(x, y):
+def train_with_model_1(x, y):
     # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
         x, y, test_size=0.2, shuffle=False
@@ -86,6 +86,32 @@ def train_data(x, y):
     return model, history
 
 
+def train_with_model_2(x, y):
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        x, y, test_size=0.2, shuffle=False
+    )
+
+    model = Sequential([
+        Bidirectional(LSTM(100, return_sequences=True), input_shape=(X_train.shape[1], X_train.shape[2])),
+        Dropout(0.3),
+        Bidirectional(LSTM(50)),
+        Dropout(0.3),
+        Dense(1, activation="sigmoid")  # Binary classification
+    ])
+
+    # model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+
+    model.compile(optimizer=Adam(learning_rate=0.0005), loss="binary_crossentropy", metrics=["accuracy"])
+
+    # Train the model
+    history = model.fit(
+        X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test)
+    )
+
+    return model, history
+
+
 def print_predict_summary(predict: np.ndarray, history: History):
     # applied_threshold_predict = (predict > threshold).astype(int)
     history_dict = history.history
@@ -106,7 +132,7 @@ def print_predict_summary(predict: np.ndarray, history: History):
         f"\n{Fore.YELLOW}argmax val_loss:{Style.RESET_ALL} {val_loss[np.argmax(val_loss)]}"
     )
 
-    predict_value = predict[np.argmax(predict)]
+    predict_value = predict[np.argmax(predict)][0]
 
     # print(f"\n{Fore.GREEN}predict:{Style.RESET_ALL} {" ".join(map(str, predict))}")
     print(f"\n{Fore.GREEN}argmax predict:{Style.RESET_ALL} {predict_value}")
@@ -115,14 +141,20 @@ def print_predict_summary(predict: np.ndarray, history: History):
     )
 
 
+time_steps = 50
+
+threshold = 0.5
+
 X, y = preprocessing_x_y_data()
 
-model, history = train_data(X, y)
+model, history = train_with_model_2(X, y)
 
 # model_local_path = os.path.join(util.get_export_dir(), "model.keras")
 # model.export(model_local_path)
 
-predict = model.predict(X[len(X) - (time_steps + 1) : len(X) - 1])
+latest_X = X[len(X) - (time_steps + 1) : len(X) - 1]
+
+predict = model.predict(latest_X)
 
 print_predict_summary(predict, history)
 

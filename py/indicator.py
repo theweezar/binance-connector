@@ -36,7 +36,7 @@ def calc_rsi(prices: pandas.Series, period: int):
 
     # Calculate RSI
     rsi = 100 - (100 / (1 + rs))
-    rsi = rsi.map(lambda val: 50 if math.isnan(val) else val)
+    # rsi = rsi.map(lambda val: 50 if math.isnan(val) else val)
 
     return rsi
 

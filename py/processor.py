@@ -7,7 +7,11 @@ import numpy as np
 def process(frame: pandas.DataFrame):
     y_prices = frame["Close"]
 
-    y_prices_nd_array = np.array(frame["Close"])
+    frame["price_change"] = y_prices.pct_change()
+
+    frame["volatility"] = y_prices.rolling(10).std()
+
+    # y_prices_nd_array = np.array(frame["Close"])
 
     rsi_7 = indicator.calc_rsi(y_prices, 7)
 
@@ -15,9 +19,9 @@ def process(frame: pandas.DataFrame):
 
     rsi_30 = indicator.calc_rsi(y_prices, 30)
 
-    ema_34 = indicator.calc_ema(y_prices_nd_array, 34)
+    ema_34 = indicator.calc_ema(y_prices, 34)
 
-    ema_89 = indicator.calc_ema(y_prices_nd_array, 89)
+    ema_89 = indicator.calc_ema(y_prices, 89)
 
     frame["rsi_7"] = rsi_7
 
@@ -29,9 +33,25 @@ def process(frame: pandas.DataFrame):
 
     frame["ema_89"] = ema_89
 
-    ema_34_x_ema_89 = (ema_34 - ema_89).abs()
+    ema_trend = ema_34 - ema_89
+
+    frame["ema_trend"] = ema_trend
+
+    ema_34_x_ema_89 = ema_trend.abs()
 
     frame["ema_34_x_ema_89"] = (ema_34_x_ema_89 <= 75).astype(int).astype(str)
+
+    ema_12 = indicator.calc_ema(y_prices, 12)
+
+    ema_26 = indicator.calc_ema(y_prices, 26)
+
+    macd = ema_12 - ema_26
+
+    frame["macd"] = macd
+
+    frame["macd_signal"] = indicator.calc_ema(macd, 9)
+
+    frame.dropna(inplace=True)
 
     return frame
 
@@ -128,18 +148,18 @@ def update_existing_api(frame: pandas.DataFrame) -> dict:
         lastest_data[camelcase_prop] = frame[prop][last_idx]
 
     api_data = util.get_api()
-    ema_signal_dict = detect_ema_signal(frame)
-    rsi_signal_dict = detect_rsi_signal(frame)
+    # ema_signal_dict = detect_ema_signal(frame)
+    # rsi_signal_dict = detect_rsi_signal(frame)
 
-    api_data["signal"] = {
-        "ema34XEma89": ema_signal_dict,
-        "futureRSI": {
-            "period": rsi_signal_dict["period"],
-            "offset": rsi_signal_dict["offset"],
-            "reach": rsi_signal_dict["reach_list_dict"],
-            "drop": rsi_signal_dict["drop_list_dict"],
-        },
-    }
+    # api_data["signal"] = {
+    #     "ema34XEma89": ema_signal_dict,
+    #     "futureRSI": {
+    #         "period": rsi_signal_dict["period"],
+    #         "offset": rsi_signal_dict["offset"],
+    #         "reach": rsi_signal_dict["reach_list_dict"],
+    #         "drop": rsi_signal_dict["drop_list_dict"],
+    #     },
+    # }
 
     api_data["processor"] = lastest_data
 
