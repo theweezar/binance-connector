@@ -5,7 +5,6 @@ module.exports = (() => {
         path: '',
         frame: '',
         interval: '',
-        symbol: '',
-        deleteBeforeExport: ''
+        symbol: ''
     };
 })();

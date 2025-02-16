@@ -12,44 +12,14 @@ const symbol = require('./config/symbol.json');
 const credentials = require('./scripts/input/credentials');
 const Klines = require('./models/klines');
 const CSV = require('./scripts/csv');
-
-/** Check credentials */
-const key = credentials.getBinanceCredentials();
-
 const program = require('./scripts/input/prompt');
+const utils = require('./scripts/utils');
 
 /** Define global variables */
+const key = credentials.getBinanceCredentials();
 const cwd = process.cwd();
 const exportDirPath = path.join(cwd, program.path);
 const frameCount = Number(program.frame);
-const LIMIT = 500;
-const timeSlots = (() => {
-    const slots = [];
-    const intervalMS = {
-        '1m': 60000,
-        '3m': 180000,
-        '5m': 300000,
-        '15m': 300000 * 3,
-        '30m': 300000 * 6,
-        '1h': 900000 * 4,
-        '4h': 900000 * 16,
-        '8h': 900000 * 32
-    };
-    const range = intervalMS[program.interval] * LIMIT;
-    let end = (new Date()).getTime();
-
-    for (let i = 0; i < frameCount; i++) {
-        let start = end - range;
-        slots.push({
-            startTime: start,
-            endTime: end
-        });
-        end = start;
-    }
-
-    return slots;
-})();
-
 const selectedSymbol = symbol[program.symbol];
 const params = {
     symbol: selectedSymbol,
@@ -57,10 +27,6 @@ const params = {
 };
 const date = moment().format('YYYYMMDDkkmmss');
 const csvFileName = `export_${date}_binance_${params.symbol}_${params.interval}.csv`;
-
-const sleep = async (milliseconds) => {
-    await new Promise(resolve => setTimeout(resolve, milliseconds));
-}
 
 /**
  * Export API to be used in other programming language
@@ -84,11 +50,15 @@ const exportLastestAPI = (klineArray) => {
 
     fs.writeFileSync(
         path.join(apiFolderPath, 'fetch.json'),
-        JSON.stringify(exportObj, null , 4)
+        JSON.stringify(exportObj, null, 4)
     );
 }
 
-(async () => {
+/**
+ * Fetching data
+ * @returns {Array} - Kline data array
+ */
+const fetchData = async () => {
     const client = new binance.USDMClient({
         api_key: key.apiKey,
         api_secret: key.secretKey
@@ -96,10 +66,16 @@ const exportLastestAPI = (klineArray) => {
 
     const mainKlineModel = new Klines();
 
-    for (let idx = 0; idx < frameCount; idx++) {
+    const timeSlots = utils.calcTimeSlot(
+        (new Date()),
+        frameCount,
+        params.interval
+    );
+
+    for (let idx = 0; idx < timeSlots.length; idx++) {
         const slot = timeSlots[idx];
 
-        if (frameCount > 1) {
+        if (timeSlots.length > 1) {
             params.startTime = slot.startTime;
             params.endTime = slot.endTime;
         }
@@ -114,15 +90,19 @@ const exportLastestAPI = (klineArray) => {
             mainKlineModel.unshift(klines);
         }
 
-        await sleep(250);
+        await utils.sleep(250);
     }
+
+    return mainKlineModel.export();
+};
+
+(async () => {
+    const klineArray = await fetchData();
 
     const csv = new CSV({
         path: exportDirPath,
         fileName: csvFileName
     });
-
-    const klineArray = mainKlineModel.export();
 
     csv.writeHeader([
         'Symbol',
@@ -150,15 +130,11 @@ const exportLastestAPI = (klineArray) => {
         ]);
     });
 
-    if (program.deleteBeforeExport) {
-        shell.ls(`${exportDirPath}/*.csv`).forEach(function (file) {
-            shell.rm('-f', file);
-        });
-    }
+    shell.ls(`${exportDirPath}/*.csv`).forEach(function (file) {
+        shell.rm('-f', file);
+    });
 
     csv.export();
 
     exportLastestAPI(klineArray);
-
-    console.info('Last price:', klineArray[klineArray.length - 1]);
 })();
