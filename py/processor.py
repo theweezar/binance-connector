@@ -101,6 +101,7 @@ def detect_rsi_signal(frame: pandas.DataFrame):
 
     offsets = {
         "BTCUSDT": 100,
+        "LTCUSDT": 1,
         "ETHUSDT": 10,
         "XRPUSDT": 0.01,
         "BNBUSDT": 1,
