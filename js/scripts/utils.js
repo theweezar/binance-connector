@@ -40,7 +40,19 @@ const sleep = async (milliseconds) => {
     await new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
+/**
+ * Create date time string for model
+ * @param {number} longTime - Time in long type
+ * @returns {string} - date time string format 2024-12-07 12:55:43 ( YYYY-MM-DD HH:MM:SS )
+ */
+const parseTimeString = (longTime) => {
+    let date = new Date(longTime);
+    let dateJSON = date.toJSON();
+    return dateJSON.split('T').join(' ').split('.')[0];
+};
+
 module.exports = {
     calcTimeSlot,
-    sleep
+    sleep,
+    parseTimeString
 };
