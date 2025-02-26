@@ -13,13 +13,13 @@ function klinesModel(apiResponseArray) {
     if (Array.isArray(apiResponseArray)) {
         apiResponseArray.forEach(item => {
             let kline = {
-                openTime: parseTimeString(item[0]),
-                openPrice: item[1],
-                highPrice: item[2],
-                lowPrice: item[3],
-                closePrice: item[4],
-                volume: item[5],
-                closeTime: parseTimeString(item[6]),
+                start: parseTimeString(item[0]),
+                open: item[1],
+                high: item[2],
+                low: item[3],
+                close: item[4],
+                vol: item[5],
+                end: parseTimeString(item[6]),
 
                 // Up/Down
                 type: item[4] - item[1] >= 0 ? 'U' : 'D'

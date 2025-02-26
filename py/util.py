@@ -3,8 +3,7 @@ import os
 import re
 import sys
 import json
-from keras.src.models.sequential import Sequential
-from keras.src.saving import load_model
+
 
 def get_export_dir():
     cwd = os.getcwd()
@@ -55,14 +54,3 @@ def get_csv() -> dict[str, pandas.DataFrame]:
 def to_camelcase(string: str):
     p_string = string.lower().replace(" ", "_")
     return re.sub(r"(?!^)_([a-zA-Z0-9])", lambda m: m.group(1).upper(), p_string)
-
-
-def save_model(model: Sequential, model_name: str):
-    export_path = os.path.join(get_export_dir(), model_name)
-    model.save(export_path)
-
-def load_local_model(model_name: str) -> Sequential:
-    export_path = os.path.join(get_export_dir(), model_name)
-    print(export_path)
-    loaded_model = load_model(export_path)
-    return loaded_model

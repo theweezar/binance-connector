@@ -18,7 +18,7 @@ const components = [];
 const processor = api.processor;
 const text = `
 <b>SYMBOL</b>: ${api.symbol}
-<b>TIME (GMT+00)</b>: ${processor.openTime}  ➡️  ${processor.closeTime}
+<b>TIME (GMT+00)</b>: ${processor.start}  ➡️  ${processor.end}
 <b>OPEN</b>: ${processor.open}
 <b>CLOSE</b>: ${processor.close}
 <b>HIGH</b>: ${processor.high}
@@ -35,7 +35,7 @@ if (api.signal && api.signal.ema34XEma89 && Object.keys(api.signal.ema34XEma89).
     const emaSignal = api.signal.ema34XEma89;
     const signalText = `---
 EMA34 ⚔️ EMA89: <b><u>${emaSignal.direction.toUpperCase()}</u></b>
-<i>at</i> ${emaSignal.openTime}  ➡️  ${emaSignal.closeTime}
+<i>at</i> ${emaSignal.start}  ➡️  ${emaSignal.end}
     `;
     components.push(signalText);
 }

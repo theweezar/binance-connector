@@ -25,19 +25,18 @@ const params = {
     symbol: selectedSymbol,
     interval: program.interval
 };
-const date = moment().format('YYYYMMDDkkmmss');
-const csvFileName = `export_${date}_binance_${params.symbol}_${params.interval}.csv`;
+const csvFileName = `export_${moment().format('YYYYMMDDkkmmss')}_binance_${params.symbol}_${params.interval}.csv`;
 
 /**
  * Export API to be used in other programming language
  * @param {Array} klineArray - Kline data array
  */
-const exportLastestAPI = (klineArray) => {
+const exportAPI = (klineArray) => {
     const apiFolderPath = path.join(exportDirPath, 'api');
 
     !fs.existsSync(apiFolderPath) && fs.mkdirSync(apiFolderPath);
 
-    const exportObj = {
+    const api = {
         fileName: csvFileName,
         filePath: path.join(exportDirPath, csvFileName),
         symbol: params.symbol,
@@ -45,12 +44,12 @@ const exportLastestAPI = (klineArray) => {
     };
 
     if (Array.isArray(klineArray)) {
-        exportObj.lastestPrice = klineArray[klineArray.length - 1];
+        api.now = klineArray[klineArray.length - 1];
     }
 
     fs.writeFileSync(
         path.join(apiFolderPath, 'fetch.json'),
-        JSON.stringify(exportObj, null, 4)
+        JSON.stringify(api, null, 4)
     );
 }
 
@@ -105,27 +104,30 @@ const fetchData = async () => {
     });
 
     csv.writeHeader([
-        'Symbol',
-        'Open Time',
-        'Close Time',
-        'Open',
-        'High',
-        'Low',
-        'Close',
-        'Volume',
-        'Type'
+        'symbol',
+        // 'Symbol',
+        'start',
+        // 'Open Time',
+        'end',
+        // 'Close Time',
+        'open',
+        'high',
+        'low',
+        'close',
+        'vol',
+        'type'
     ]);
 
     klineArray.forEach(item => {
         csv.writeRow([
             params.symbol,
-            item.openTime,
-            item.closeTime,
-            item.openPrice,
-            item.highPrice,
-            item.lowPrice,
-            item.closePrice,
-            item.volume,
+            item.start,
+            item.end,
+            item.open,
+            item.high,
+            item.low,
+            item.close,
+            item.vol,
             item.type
         ]);
     });
@@ -136,5 +138,5 @@ const fetchData = async () => {
 
     csv.export();
 
-    exportLastestAPI(klineArray);
+    exportAPI(klineArray);
 })();

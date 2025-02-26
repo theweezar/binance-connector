@@ -28,16 +28,18 @@ def preprocessing_data():
     features = data[
         [
             "Close",
-            "price_change",
-            "volatility",
+            # "price_change",
+            # "volatility",
             "ema_trend",
-            "rsi_7",
-            "rsi_14",
-            "rsi_30",
-            "ema_34",
-            "ema_89",
+            # "rsi_7",
+            # "rsi_14",
+            "rsi_9",
+            "rsi_12",
+            # "rsi_30",
+            # "ema_34",
+            # "ema_89",
             "macd",
-            "macd_signal",
+            "macd_signal"
         ]
     ]
 
@@ -47,7 +49,7 @@ def preprocessing_data():
     # Scale features
     scaler = MinMaxScaler()
     features_scaled = scaler.fit_transform(features)
-    time_steps = 24
+    time_steps = 30
 
     X, y = create_sequences(features_scaled, target.values, time_steps)
 
@@ -64,12 +66,12 @@ def train_with_model_1(x, y):
     model = Sequential(
         [
             LSTM(
-                50,
+                64,
                 return_sequences=True,
                 input_shape=(X_train.shape[1], X_train.shape[2]),
             ),
             Dropout(0.2),
-            LSTM(50),
+            LSTM(64),
             Dropout(0.2),
             Dense(1, activation="sigmoid"),  # Binary classification
         ]
@@ -79,7 +81,7 @@ def train_with_model_1(x, y):
 
     # Train the model
     history = model.fit(
-        X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test)
+        X_train, y_train, epochs=30, batch_size=32, validation_data=(X_test, y_test)
     )
 
     return model, history
@@ -94,11 +96,11 @@ def train_with_model_2(x, y):
     model = Sequential(
         [
             Bidirectional(
-                LSTM(100, return_sequences=True),
+                LSTM(64, return_sequences=True),
                 input_shape=(X_train.shape[1], X_train.shape[2]),
             ),
             Dropout(0.3),
-            Bidirectional(LSTM(50)),
+            Bidirectional(LSTM(64)),
             Dropout(0.3),
             Dense(1, activation="sigmoid"),  # Binary classification
         ]
@@ -113,7 +115,7 @@ def train_with_model_2(x, y):
 
     # Train the model
     history = model.fit(
-        X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test)
+        X_train, y_train, epochs=30, batch_size=32, validation_data=(X_test, y_test)
     )
 
     return model, history
