@@ -34,7 +34,7 @@ def save_api(api_dict: dict):
         json.dump(api_dict, json_file, ensure_ascii=False, indent=4)
 
 
-def get_csv() -> dict[str, pandas.DataFrame]:
+def get_csv() -> dict[str, pandas.DataFrame, str]:
     export_dir_path = get_export_dir()
     api_data = get_api()
     file_name = api_data["fileName"]
@@ -47,7 +47,7 @@ def get_csv() -> dict[str, pandas.DataFrame]:
     return {
         "data_frame": pandas.read_csv(csv_file_path, sep=","),
         "file_name": file_name,
-        "file_path": csv_file_path,
+        "file_path": csv_file_path
     }
 
 

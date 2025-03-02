@@ -1,5 +1,18 @@
 'use strict';
 
+// milisecond
+const intervalMS = {
+    '1m': 60000,
+    '3m': 60000 * 3,
+    '5m': 60000 * 5,
+    '15m': 60000 * 15,
+    '30m': 60000 * 30,
+    '1h': 60000 * 60, // 15m x 4
+    '4h': 60000 * 60 * 4,
+    '8h': 60000 * 60 * 8
+};
+const LIMIT = 500;
+
 /**
  * Get time slot array
  * @param {Date} current - Current date object
@@ -8,19 +21,7 @@
  * @returns {Array} - Time slot array
  */
 const calcTimeSlot = (current, frame, interval) => {
-    const LIMIT = 500;
     const slots = [];
-    // milisecond
-    const intervalMS = {
-        '1m': 60000,
-        '3m': 60000 * 3,
-        '5m': 60000 * 5,
-        '15m': 60000 * 15,
-        '30m': 60000 * 30,
-        '1h': 60000 * 60, // 15m x 4
-        '4h': 60000 * 60 * 4,
-        '8h': 60000 * 60 * 8
-    };
     const range = intervalMS[interval] * LIMIT;
     let end = current.getTime();
 
@@ -31,6 +32,36 @@ const calcTimeSlot = (current, frame, interval) => {
             endTime: end
         });
         end = start;
+    }
+
+    return slots;
+};
+
+/**
+ * Get time slot array by start/end date
+ * @param {Date} startDate - Start date
+ * @param {Date} endDate - End date
+ * @param {string} interval - frame interval
+ * @returns {Array} - Time slot array
+ */
+const calcTimeSlotByDate = (startDate, endDate, interval) => {
+    const slots = [];
+    const range = intervalMS[interval] * LIMIT;
+    let stop = false;
+    let end = endDate.getTime();
+    let start = startDate.getTime();
+
+    while (!stop) {
+        let tempStart = end - range;
+        if (tempStart <= start) {
+            tempStart = start;
+            stop = true;
+        }
+        slots.push({
+            startTime: tempStart,
+            endTime: end
+        });
+        end = tempStart;
     }
 
     return slots;
@@ -53,6 +84,7 @@ const parseTimeString = (longTime) => {
 
 module.exports = {
     calcTimeSlot,
+    calcTimeSlotByDate,
     sleep,
     parseTimeString
 };

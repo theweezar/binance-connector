@@ -9,6 +9,7 @@ module.exports = (() => {
         .option('-s, --symbol [type]', 'Configure coin symbol', 'BTC')
         .option('-i, --interval [type]', 'Configure chart interval', '1h')
         .option('-f, --frame [type]', 'Configure how many frame to loop', 1)
+        .option('-b, --back [type]', 'Configure the start time to current time')
         .parse(process.argv);
 
     return {
@@ -16,5 +17,6 @@ module.exports = (() => {
         frame: program.frame,
         interval: program.interval,
         symbol: program.symbol,
+        back: program.back
     };
 })();

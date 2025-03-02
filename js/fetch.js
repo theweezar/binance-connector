@@ -64,20 +64,34 @@ const fetchData = async () => {
     });
 
     const mainKlineModel = new Klines();
+    let timeSlots;
 
-    const timeSlots = utils.calcTimeSlot(
-        (new Date()),
-        frameCount,
-        params.interval
-    );
+    if (!program.back || program.back === '0' || program.back === 0) {
+        timeSlots = utils.calcTimeSlot(
+            (new Date()),
+            frameCount,
+            params.interval
+        );
+    } else {
+        let start = new Date();
+        let end = new Date();
+        start.setDate(start.getDate() - Number(program.back));
+        start.setHours(0);
+        start.setMinutes(0);
+        start.setSeconds(0);
+        start.setMilliseconds(0);
+        timeSlots = utils.calcTimeSlotByDate(
+            start,
+            end,
+            params.interval
+        );
+    }
 
     for (let idx = 0; idx < timeSlots.length; idx++) {
         const slot = timeSlots[idx];
 
-        if (timeSlots.length > 1) {
-            params.startTime = slot.startTime;
-            params.endTime = slot.endTime;
-        }
+        params.startTime = slot.startTime;
+        params.endTime = slot.endTime;
 
         // https://developers.binance.com/docs/derivatives/coin-margined-futures/market-data/Kline-Candlestick-Data
         const klineData = await client.getKlines(params).catch(error => {
@@ -105,11 +119,8 @@ const fetchData = async () => {
 
     csv.writeHeader([
         'symbol',
-        // 'Symbol',
         'start',
-        // 'Open Time',
         'end',
-        // 'Close Time',
         'open',
         'high',
         'low',
