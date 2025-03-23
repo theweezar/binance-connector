@@ -1,4 +1,5 @@
 import util
+import modelUtils
 import numpy as np
 from colorama import Fore, Style
 from keras.src.models.sequential import Sequential
@@ -11,6 +12,7 @@ from keras.src.optimizers import Adam
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
+
 def create_sequences(features, target, time_steps):
     X, y = [], []
     for i in range(len(features) - time_steps * 2):
@@ -22,19 +24,20 @@ def create_sequences(features, target, time_steps):
 def preprocessing_data():
     csv = util.get_csv()
     data = csv["data_frame"]
-    symbol = data["Symbol"][0]
+    symbol = data["symbol"][0]
 
     # Raw X values
     features = data[
         [
-            "Close",
+            "close",
             # "price_change",
             # "volatility",
             "ema_trend",
             # "rsi_7",
             # "rsi_14",
+            "rsi_6",
             "rsi_9",
-            "rsi_12",
+            # "rsi_12",
             # "rsi_30",
             # "ema_34",
             # "ema_89",
@@ -44,7 +47,7 @@ def preprocessing_data():
     ]
 
     # Binary classification -> Up/Down -> raw y values
-    target = (data["Type"] == "U").astype(int)
+    target = (data["type"] == "U").astype(int)
 
     # Scale features
     scaler = MinMaxScaler()
@@ -121,9 +124,7 @@ def train_with_model_2(x, y):
     return model, history
 
 
-def print_predict_summary(model: Sequential, predict: np.ndarray, history):
-    model.summary()
-
+def print_history(history):
     if type(history) is History:
         history_dict = history.history
         accuracy = history_dict.get("accuracy")
@@ -142,7 +143,13 @@ def print_predict_summary(model: Sequential, predict: np.ndarray, history):
             f"\n{Fore.YELLOW}argmax val_loss:{Style.RESET_ALL} {val_loss[np.argmax(val_loss)]}"
         )
 
+
+def print_predict_summary(model: Sequential, predict: np.ndarray, history):
+    model.summary()
+
     predict_value = predict[np.argmax(predict)][0]
+
+    print_history(history)
 
     # print(f"\n{Fore.GREEN}predict:{Style.RESET_ALL} {" ".join(map(str, predict))}")
     print(f"\n{Fore.GREEN}argmax predict:{Style.RESET_ALL} {predict_value}")
@@ -156,4 +163,6 @@ if __name__ == "__main__":
 
     model, history = train_with_model_2(X, y)
 
-    util.save_model(model, f"{symbol}_model.keras")
+    print_history(history)
+
+    modelUtils.save_model(model, f"{symbol}_model.keras")

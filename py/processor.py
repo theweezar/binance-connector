@@ -1,23 +1,28 @@
+import ta.momentum
+import ta.trend
 import util
 import pandas
 import indicator
 import numpy as np
+import ta
 
 
 def process(frame: pandas.DataFrame):
-    y_prices = frame["close"]
+    close = frame["close"]
+    high = frame["high"]
+    low = frame["low"]
 
-    frame["price_change"] = y_prices.pct_change()
-    frame["volatility"] = y_prices.rolling(10).std()
+    frame["price_change"] = close.pct_change()
+    frame["volatility"] = close.rolling(10).std()
 
-    rsi_6 = indicator.calc_rsi(y_prices, 6)
-    rsi_7 = indicator.calc_rsi(y_prices, 7)
-    rsi_9 = indicator.calc_rsi(y_prices, 9)
-    rsi_12 = indicator.calc_rsi(y_prices, 12)
-    rsi_14 = indicator.calc_rsi(y_prices, 14)
-    rsi_30 = indicator.calc_rsi(y_prices, 30)
-    ema_34 = indicator.calc_ema(y_prices, 34)
-    ema_89 = indicator.calc_ema(y_prices, 89)
+    rsi_6 = ta.momentum.rsi(close, 6)
+    rsi_7 = ta.momentum.rsi(close, 7)
+    rsi_9 = ta.momentum.rsi(close, 9)
+    rsi_12 = ta.momentum.rsi(close, 12)
+    rsi_14 = ta.momentum.rsi(close, 14)
+    rsi_30 = ta.momentum.rsi(close, 30)
+    ema_34 = ta.trend.ema_indicator(close, 34)
+    ema_89 = ta.trend.ema_indicator(close, 89)
 
     frame["rsi_6"] = rsi_6
     frame["rsi_7"] = rsi_7
@@ -46,13 +51,14 @@ def process(frame: pandas.DataFrame):
         (ema_trend.abs() <= offsets[symbol]).astype(int).astype(str)
     )
 
-    ema_12 = indicator.calc_ema(y_prices, 12)
-    ema_26 = indicator.calc_ema(y_prices, 26)
+    ema_12 = ta.trend.ema_indicator(close, 12)
+    ema_26 = ta.trend.ema_indicator(close, 26)
     macd = ema_12 - ema_26
 
     frame["macd"] = macd
-    frame["macd_signal"] = indicator.calc_ema(macd, 9)
-    # frame.dropna(inplace=True)
+    frame["macd_signal"] = ta.trend.ema_indicator(macd, 9)
+
+    frame["adx_14"] = ta.trend.ADXIndicator(high, low, close).adx()
 
     return frame
 
@@ -110,7 +116,7 @@ def detect_rsi_signal(frame: pandas.DataFrame):
     offset = offsets[symbol]
     reach_level_list = [70, 75, 80, 90]
     reach_list = []
-    drop_level_list = [30, 25, 20, 15]
+    drop_level_list = [30, 25, 20, 10]
     drop_list = []
 
     for level in reach_level_list:
@@ -144,18 +150,18 @@ def update_api(frame: pandas.DataFrame) -> dict:
         lastest_data[camelcase_prop] = frame[prop][last_idx]
 
     api_data = util.get_api()
-    ema_signal_dict = detect_ema_signal(frame)
-    rsi_signal_dict = detect_rsi_signal(frame)
+    # ema_signal_dict = detect_ema_signal(frame)
+    # rsi_signal_dict = detect_rsi_signal(frame)
 
-    api_data["signal"] = {
-        "ema34x89": ema_signal_dict,
-        "futureRSI": {
-            "period": rsi_signal_dict["period"],
-            "offset": rsi_signal_dict["offset"],
-            "reach": rsi_signal_dict["reach_list"],
-            "drop": rsi_signal_dict["drop_list"],
-        },
-    }
+    # api_data["signal"] = {
+    #     "ema34x89": ema_signal_dict,
+    #     "futureRSI": {
+    #         "period": rsi_signal_dict["period"],
+    #         "offset": rsi_signal_dict["offset"],
+    #         "reach": rsi_signal_dict["reach_list"],
+    #         "drop": rsi_signal_dict["drop_list"],
+    #     },
+    # }
 
     api_data["processor"] = lastest_data
 
