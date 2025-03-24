@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-node ./js/cli.js price:frame -p "ignore" -s "XRP" -i "15m" -f 3
+node ./js/cli.js price:frame -s "XRP" -i "1h" -f 1
+# node ./js/cli.js price:period -s "XRP" -i "1h" -S "2025-01-01" -E "2025-03-24"
+# node ./js/cli.js price:period -s "XRP" -i "1h" -S "2025-03-24" -E "2025-03-25"
 python ./py/processor.py ./ignore
 # python ./py/draw.py ./ignore
 # python ./py/trainer.py

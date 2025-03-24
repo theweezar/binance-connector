@@ -139,14 +139,24 @@ function exportCSV(data, exportFilePath, symbol) {
 function calcTimeSlot(opts) {
     const backDate = Number(opts.back);
 
-    if (!backDate || isNaN(backDate)) {
+    if (opts.mode === 'frame') {
         return utils.calcTimeSlot((new Date()), Number(opts.frame), opts.interval);
-    } else {
+    }
+
+    if (opts.mode === 'date') {
         let start = new Date();
         start.setDate(start.getDate() - backDate);
         start.setHours(0, 0, 0, 0);
         return utils.calcTimeSlotByDate(start, (new Date()), opts.interval);
     }
+
+    if (opts.mode === 'period') {
+        let start = new Date(opts.start);
+        let end = new Date(opts.end);
+        return utils.calcTimeSlotByDate(start, end, opts.interval);
+    }
+
+    throw Error('Cannot parse time slots');
 }
 
 /**
@@ -164,6 +174,9 @@ async function execute(opts) {
     const cwd = process.cwd();
     const csvFileName = `export_${moment().format('YYYYMMDDkkmmss')}_binance_${params.symbol}_${params.interval}.csv`;
     const exportFilePath = path.join(cwd, opts.path, csvFileName);
+
+    console.log(`Fetching data with ${timeSlots.length} time slots`);
+
     const data = await fetchData(key, timeSlots, params);
 
     exportCSV(data, exportFilePath, params.symbol);
@@ -171,6 +184,57 @@ async function execute(opts) {
     exportAPI(data, exportFilePath, params);
 }
 
+function validate(opts) {
+    if (!opts.symbol) this.missingArgument('symbol');
+    if (!opts.interval) this.missingArgument('interval');
+    if (opts.mode === 'frame' && (!opts.frame || !Number(opts.frame) || Number(opts.frame) === 0)) {
+        console.error('error: missing or invalid frame number');
+        process.exit(1);
+    }
+    if (opts.mode === 'period') {
+        if (!opts.start) this.missingArgument('start');
+        if (!opts.end) this.missingArgument('end');
+        if ((new Date(opts.start)).toString().toLowerCase() === 'invalid date') {
+            console.error('error: invalid start date');
+            process.exit(1);
+        }
+        if ((new Date(opts.end)).toString().toLowerCase() === 'invalid date') {
+            console.error('error: invalid end date');
+            process.exit(1);
+        }
+    }
+}
+
+function executeUsingFrame(opts) {
+    const options = {
+        mode: 'frame'
+    };
+    Object.assign(options, opts);
+    validate.call(this, options)
+    execute.call(this, options)
+}
+
+function executeUsingDate(opts) {
+    const options = {
+        mode: 'date'
+    };
+    Object.assign(options, opts);
+    validate.call(this, options)
+    execute.call(this, options)
+}
+
+function executeUsingPeriod(opts) {
+    const options = {
+        mode: 'period'
+    };
+    Object.assign(options, opts);
+    validate.call(this, options)
+    execute.call(this, options)
+}
+
 module.exports = {
-    execute
+    execute,
+    executeUsingFrame,
+    executeUsingDate,
+    executeUsingPeriod
 };

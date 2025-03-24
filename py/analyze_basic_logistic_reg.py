@@ -1,4 +1,6 @@
 import util
+import pickle
+import os
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -50,8 +52,6 @@ def train(x, y):
     # Make predictions
     y_pred = model.predict(X_test_scaled)
 
-    print(y_pred)
-
     # Model Accuracy
     accuracy = accuracy_score(y_test, y_pred)
     print(f"Model Accuracy: {accuracy:.2f}")
@@ -59,8 +59,25 @@ def train(x, y):
     # Classification Report
     print("Classification Report:\n", classification_report(y_test, y_pred))
 
+    return model
+
 
 if __name__ == "__main__":
     X, y, symbol = preprocessing_data()
+    # trained_model = train(X, y)
+    export_dir = util.get_export_dir()
+    export_path = os.path.join(export_dir, "model.pkl")
 
-    train(X, y)
+    # with open(export_path, "wb") as f:
+    #     pickle.dump(trained_model, f)
+
+    with open(export_path, "rb") as f:
+        model = pickle.load(f)
+
+    latest_X = X[len(X) - (20 + 1) : len(X) - 1]
+    latest_Y = y[len(y) - (20 + 1) : len(y) - 1]
+
+    y_pred = model.predict(latest_X)
+    accuracy = accuracy_score(latest_Y, y_pred)
+    print(f"Model Accuracy: {accuracy:.2f}")
+
