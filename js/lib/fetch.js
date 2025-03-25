@@ -3,9 +3,7 @@
 /** Packages */
 const binance = require('binance');
 const path = require('path');
-const shell = require('shelljs');
 const fs = require('fs');
-const moment = require('moment');
 
 /** Scripts, variables */
 const symbol = require('../config/symbol.json');
@@ -124,9 +122,10 @@ function exportCSV(data, exportFilePath, symbol) {
         ]);
     });
 
-    shell.ls(`${exportDirPath}/*.csv`).forEach(function (file) {
-        shell.rm('-f', file);
-    });
+    if (fs.existsSync(exportFilePath)) {
+        console.log(`Removing existing file: ${exportFilePath}`);
+        fs.unlinkSync(exportFilePath);
+    }
 
     csv.export();
 }
@@ -160,30 +159,9 @@ function calcTimeSlot(opts) {
 }
 
 /**
- * Execute the data fetching and exporting process
- * @param {Object} opts - Options for execution
+ * Validate the options provided
+ * @param {Object} opts - Options to validate
  */
-async function execute(opts) {
-    const key = credentials.getBinanceCredentials();
-    const timeSlots = calcTimeSlot(opts);
-    const selectedSymbol = symbol[opts.symbol];
-    const params = {
-        symbol: selectedSymbol,
-        interval: opts.interval
-    };
-    const cwd = process.cwd();
-    const csvFileName = `export_${moment().format('YYYYMMDDkkmmss')}_binance_${params.symbol}_${params.interval}.csv`;
-    const exportFilePath = path.join(cwd, opts.path, csvFileName);
-
-    console.log(`Fetching data with ${timeSlots.length} time slots`);
-
-    const data = await fetchData(key, timeSlots, params);
-
-    exportCSV(data, exportFilePath, params.symbol);
-
-    exportAPI(data, exportFilePath, params);
-}
-
 function validate(opts) {
     if (!opts.symbol) this.missingArgument('symbol');
     if (!opts.interval) this.missingArgument('interval');
@@ -205,6 +183,35 @@ function validate(opts) {
     }
 }
 
+/**
+ * Execute the data fetching and exporting process
+ * @param {Object} opts - Options for execution
+ */
+async function execute(opts) {
+    const key = credentials.getBinanceCredentials();
+    const timeSlots = calcTimeSlot(opts);
+    const selectedSymbol = symbol[opts.symbol];
+    const params = {
+        symbol: selectedSymbol,
+        interval: opts.interval
+    };
+    const cwd = process.cwd();
+    // const csvFileName = `export_${moment().format('YYYYMMDDkkmmss')}_binance_${params.symbol}_${params.interval}.csv`;
+    const exportFilePath = path.join(cwd, opts.path);
+
+    console.log(`Fetching data with ${timeSlots.length} time slots`);
+
+    const data = await fetchData(key, timeSlots, params);
+
+    exportCSV(data, exportFilePath, params.symbol);
+
+    exportAPI(data, exportFilePath, params);
+}
+
+/**
+ * Execute the process using frame mode
+ * @param {Object} opts - Options for execution
+ */
 function executeUsingFrame(opts) {
     const options = {
         mode: 'frame'
@@ -214,6 +221,10 @@ function executeUsingFrame(opts) {
     execute.call(this, options)
 }
 
+/**
+ * Execute the process using date mode
+ * @param {Object} opts - Options for execution
+ */
 function executeUsingDate(opts) {
     const options = {
         mode: 'date'
@@ -223,6 +234,10 @@ function executeUsingDate(opts) {
     execute.call(this, options)
 }
 
+/**
+ * Execute the process using period mode
+ * @param {Object} opts - Options for execution
+ */
 function executeUsingPeriod(opts) {
     const options = {
         mode: 'period'

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-node ./js/cli.js price:frame -s "XRP" -i "1h" -f 1
-# node ./js/cli.js price:period -s "XRP" -i "1h" -S "2025-01-01" -E "2025-03-24"
-# node ./js/cli.js price:period -s "XRP" -i "1h" -S "2025-03-24" -E "2025-03-25"
-python ./py/processor.py ./ignore
-# python ./py/draw.py ./ignore
-# python ./py/trainer.py
-# python ./py/analyze_basic_logistic_reg.py ./ignore
-# python ./py/model.py
+symbol="XRP"
+interval="1h"
 
-# node ./js/robot.js
+node ./js/cli.js price:period -p ignore/$symbol.csv -s $symbol -i "1h" -S "2025-01-01" -E "2025-03-20"
+python py/cli.py process --source=ignore/$symbol.csv
+python py/cli.py train --source=ignore/$symbol.csv --module=logistic_reg_model --export=ignore/$symbol\_logistic_reg_model.pkl
+
+node js/cli.js price:frame -p ignore/$symbol\_now.csv -s $symbol -i "1h" -f 1
+python py/cli.py process --source=ignore/$symbol\_now.csv
+python py/cli.py predict --source=ignore/$symbol\_now.csv --model=ignore/$symbol\_logistic_reg_model.pkl --timesteps=20
