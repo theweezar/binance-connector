@@ -5,8 +5,10 @@ import pandas
 import importlib
 import pickle
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 from sklearn.metrics import accuracy_score
+
 
 def resolve(path: str) -> str:
     """
@@ -19,6 +21,7 @@ def resolve(path: str) -> str:
         str: The absolute path.
     """
     return Path(os.path.join(os.getcwd(), path)).resolve()
+
 
 def get_source(source: str) -> dict[str, pandas.DataFrame, str]:
     """
@@ -44,7 +47,7 @@ def get_source(source: str) -> dict[str, pandas.DataFrame, str]:
 
 
 def preprocessing_data(
-    dataframe: pandas.DataFrame,
+    dataframe: pandas.DataFrame, dropna: bool = False
 ) -> tuple[pandas.DataFrame, pandas.DataFrame, str]:
     """
     Preprocess the data for model training.
@@ -57,7 +60,9 @@ def preprocessing_data(
     """
     data = dataframe.copy()
     symbol = data["symbol"][0]
-    data.dropna(inplace=True)
+
+    if dropna is True:
+        data.dropna(inplace=True)
 
     # Raw X values
     x_features = data[
@@ -74,13 +79,19 @@ def preprocessing_data(
         ]
     ]
 
+    # Initialize StandardScaler
+    scaler = StandardScaler()
+
+    # Scale the dataset
+    X_scaled = scaler.fit_transform(x_features.values)
+
     # Binary classification -> Up/Down -> raw y values
-    y_target = (data["type"] == "U").astype(int)
+    y_target = (data["next_type"] == "U").astype(int)
 
-    return x_features, y_target, symbol
+    return pandas.DataFrame(X_scaled), y_target, symbol
 
 
-def _export(path, model):
+def export_py_object(path: str, model: object):
     """
     Export the trained model to a file.
 
@@ -111,7 +122,7 @@ def load(path) -> LogisticRegression:
 
 """
 python py/cli.py train --source=ignore/export_20250324225400_binance_XRPUSDT_1h.csv --module=logistic_reg_model --export=ignore/model1.pkl
-python py/cli.py use --source=ignore/export_20250324225400_binance_XRPUSDT_1h.csv --model=ignore/model1.pkl --timesteps=1
+python py/cli.py predict --source=ignore/export_20250324225400_binance_XRPUSDT_1h.csv --model=ignore/model1.pkl --timesteps=1
 python py/cli.py process --source=ignore/export_20250324225400_binance_XRPUSDT_1h.csv
 """
 
@@ -132,10 +143,10 @@ class Model(object):
         print(f"Start analyzing price data for {symbol}")
 
         _module = importlib.import_module(module)
-        _model = _module.train(x, y)
+        _model = _module.train(x.values, y.values)
 
         if export != "":
-            _export(export, _model)
+            export_py_object(export, _model)
 
     def predict(self, source, model, timesteps=60):
         """
@@ -147,7 +158,7 @@ class Model(object):
             timesteps (int, optional): The number of timesteps for prediction. Defaults to 60.
         """
         _source = get_source(source)
-        x, y, symbol = preprocessing_data(_source["dataframe"])
+        x, y, symbol = preprocessing_data(_source["dataframe"], dropna=False)
         model_path = resolve(model)
         _model = load(model_path)
 
@@ -163,7 +174,6 @@ class Model(object):
         accuracy = accuracy_score(_y.values, y_pred)
 
         print(f"Model Accuracy: {accuracy:.2f}")
-
 
     def process(self, source):
         """

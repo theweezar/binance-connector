@@ -57,4 +57,6 @@ def process(frame: pandas.DataFrame):
 
     frame["adx_14"] = ta.trend.ADXIndicator(high, low, close).adx()
 
+    frame["next_type"] = frame["type"].shift(-1)
+
     return frame
