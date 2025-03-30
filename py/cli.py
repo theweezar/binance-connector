@@ -4,8 +4,8 @@ import os
 import pandas
 import importlib
 import pickle
+import processor
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 from sklearn.metrics import accuracy_score
 
@@ -46,51 +46,6 @@ def get_source(source: str) -> dict[str, pandas.DataFrame, str]:
     }
 
 
-def preprocessing_data(
-    dataframe: pandas.DataFrame, dropna: bool = False
-) -> tuple[pandas.DataFrame, pandas.DataFrame, str]:
-    """
-    Preprocess the data for model training.
-
-    Args:
-        dataframe (pandas.DataFrame): The input dataframe.
-
-    Returns:
-        tuple: A tuple containing the features, target, and symbol.
-    """
-    data = dataframe.copy()
-    symbol = data["symbol"][0]
-
-    if dropna is True:
-        data.dropna(inplace=True)
-
-    # Raw X values
-    x_features = data[
-        [
-            "close",
-            "ema_trend",
-            "rsi_6",
-            "rsi_9",
-            "ema_34",
-            "ema_89",
-            "macd",
-            "macd_signal",
-            "adx_14",
-        ]
-    ]
-
-    # Initialize StandardScaler
-    scaler = StandardScaler()
-
-    # Scale the dataset
-    X_scaled = scaler.fit_transform(x_features.values)
-
-    # Binary classification -> Up/Down -> raw y values
-    y_target = (data["next_type"] == "U").astype(int)
-
-    return pandas.DataFrame(X_scaled), y_target, symbol
-
-
 def export_py_object(path: str, model: object):
     """
     Export the trained model to a file.
@@ -100,6 +55,11 @@ def export_py_object(path: str, model: object):
         model: The trained model.
     """
     export_path = resolve(path)
+    existing = Path(export_path)
+    if existing.is_file():
+        print(f"Removed existing file: {export_path}")
+        existing.unlink()
+
     with open(export_path, "wb") as f:
         pickle.dump(model, f)
         print(f"Model exported to {export_path}")
@@ -138,7 +98,7 @@ class Model(object):
             export (str, optional): The path to export the trained model. Defaults to "".
         """
         _source = get_source(source)
-        x, y, symbol = preprocessing_data(_source["dataframe"])
+        x, y, symbol = processor.preprocessing_data(_source["dataframe"], dropna=True)
 
         print(f"Start analyzing price data for {symbol}")
 
@@ -158,7 +118,7 @@ class Model(object):
             timesteps (int, optional): The number of timesteps for prediction. Defaults to 60.
         """
         _source = get_source(source)
-        x, y, symbol = preprocessing_data(_source["dataframe"], dropna=False)
+        x, y, symbol = processor.preprocessing_data(_source["dataframe"], dropna=False)
         model_path = resolve(model)
         _model = load(model_path)
 
@@ -183,8 +143,6 @@ class Model(object):
             source (str): The path to the source data.
         """
         _source = get_source(source)
-
-        import processor
 
         print(f"Start processing data for {_source['filepath']}")
 
