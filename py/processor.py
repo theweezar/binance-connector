@@ -185,3 +185,24 @@ def preprocessing_data(
     y_target = (data["next_type"] == "U").astype(int)
 
     return X_scaled, y_target, symbol
+
+
+def calc_price_if_reverse_rsi(
+    prices: pandas.Series, desired_rsi: float, period: int, price_offset: int
+):
+    this_prices = prices.copy()
+    current_rsi = ta.momentum.rsi(this_prices, period)
+
+    length = len(current_rsi)
+
+    if current_rsi[length - 1] >= desired_rsi:
+        return this_prices[length - 1]
+
+    this_rsi = current_rsi[length - 1]
+
+    while this_rsi < desired_rsi:
+        this_prices[length - 1] = this_prices[length - 1] + price_offset
+        rsi_add_offset = ta.momentum.rsi(this_prices, period)
+        this_rsi = rsi_add_offset[length - 1]
+
+    return this_prices[length - 1]
