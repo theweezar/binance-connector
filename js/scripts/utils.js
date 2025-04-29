@@ -84,9 +84,21 @@ const parseTimeString = (longTime) => {
     return dateJSON.split('T').join(' ').split('.')[0];
 };
 
+/**
+ * Create date string for model
+ * @param {number} longTime - Time in long type
+ * @returns {string} - date string format 2024-12-07 ( YYYY-MM-DD ) 
+ */
+const parseDateString = (longTime) => {
+    let date = new Date(longTime);
+    let dateJSON = date.toJSON();
+    return dateJSON.split('T')[0];
+};
+
 module.exports = {
     calcTimeSlot,
     calcTimeSlotByDate,
     sleep,
-    parseTimeString
+    parseTimeString,
+    parseDateString
 };

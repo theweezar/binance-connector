@@ -98,6 +98,7 @@ function exportCSV(data, exportFilePath, symbol) {
 
     csv.writeHeader([
         'symbol',
+        'date',
         'start',
         'end',
         'open',
@@ -111,6 +112,7 @@ function exportCSV(data, exportFilePath, symbol) {
     data.forEach(item => {
         csv.writeRow([
             symbol,
+            item.date,
             item.start,
             item.end,
             item.open,

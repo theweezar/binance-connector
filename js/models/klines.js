@@ -1,6 +1,6 @@
 'use strict';
 
-const { parseTimeString } = require('../scripts/utils');
+const { parseTimeString, parseDateString } = require('../scripts/utils');
 
 /**
  * @constructor
@@ -22,7 +22,8 @@ function klinesModel(apiResponseArray) {
                 end: parseTimeString(item[6]),
 
                 // Up/Down
-                type: item[4] - item[1] >= 0 ? 'U' : 'D'
+                type: item[4] - item[1] >= 0 ? 'U' : 'D',
+                date: parseDateString(item[0]),
             };
 
             this.klines.push(kline);

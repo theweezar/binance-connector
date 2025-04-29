@@ -1,0 +1,130 @@
+[
+    {
+        "path": "ignore/stock/S&P 500_HistoricalData_1744300674147.csv",
+        "rename": {
+            "columns": [
+                {
+                    "from": "Date",
+                    "to": "{prefix}_date"
+                },
+                {
+                    "from": "Open",
+                    "to": "{prefix}_open",
+                    "type": "float"
+                },
+                {
+                    "from": "High",
+                    "to": "{prefix}_high",
+                    "type": "float"
+                },
+                {
+                    "from": "Low",
+                    "to": "{prefix}_low",
+                    "type": "float"
+                },
+                {
+                    "from": "Close/Last",
+                    "to": "{prefix}_close",
+                    "type": "float"
+                }
+            ],
+            "prefix": "sp500"
+        }
+    },
+    {
+        "path": "ignore/stock/Nasdaq_HistoricalData_1744301075920.csv",
+        "rename": {
+            "columns": [
+                {
+                    "from": "Date",
+                    "to": "{prefix}_date"
+                },
+                {
+                    "from": "Open",
+                    "to": "{prefix}_open",
+                    "type": "float"
+                },
+                {
+                    "from": "High",
+                    "to": "{prefix}_high",
+                    "type": "float"
+                },
+                {
+                    "from": "Low",
+                    "to": "{prefix}_low",
+                    "type": "float"
+                },
+                {
+                    "from": "Close/Last",
+                    "to": "{prefix}_close",
+                    "type": "float"
+                }
+            ],
+            "prefix": "nasdaq"
+        }
+    },
+    {
+        "path": "ignore/stock/Gold Futures Historical Data.csv",
+        "rename": {
+            "columns": [
+                {
+                    "from": "Date",
+                    "to": "{prefix}_date"
+                },
+                {
+                    "from": "Open",
+                    "to": "{prefix}_open",
+                    "type": "float"
+                },
+                {
+                    "from": "High",
+                    "to": "{prefix}_high",
+                    "type": "float"
+                },
+                {
+                    "from": "Low",
+                    "to": "{prefix}_low",
+                    "type": "float"
+                },
+                {
+                    "from": "Price",
+                    "to": "{prefix}_close",
+                    "type": "float"
+                }
+            ],
+            "prefix": "gold"
+        }
+    },
+    {
+        "path": "ignore/BTC.csv",
+        "rename": {
+            "columns": [
+                {
+                    "from": "date",
+                    "to": "{prefix}_date"
+                },
+                {
+                    "from": "open",
+                    "to": "{prefix}_open",
+                    "type": "float"
+                },
+                {
+                    "from": "high",
+                    "to": "{prefix}_high",
+                    "type": "float"
+                },
+                {
+                    "from": "low",
+                    "to": "{prefix}_low",
+                    "type": "float"
+                },
+                {
+                    "from": "close",
+                    "to": "{prefix}_close",
+                    "type": "float"
+                }
+            ],
+            "prefix": "btc"
+        }
+    }
+]
