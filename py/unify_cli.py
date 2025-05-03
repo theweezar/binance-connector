@@ -3,21 +3,10 @@ import ta.momentum
 import ta.trend
 import file
 import pandas as pd
-import json
-import os
 import datetime
 import re
-
-
-def get_unify_config() -> dict:
-    """
-    Load the unify configuration from the JSON file.
-    """
-    config_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "unify.json"
-    )
-    with open(config_path, "r") as json_file:
-        return json.load(json_file)
+import fire
+import processor
 
 
 def convert_date_to_timestamp(date_str: str) -> str:
@@ -62,6 +51,9 @@ def process_dataframe(dataframe: pd.DataFrame, prefix: str = "") -> pd.DataFrame
     frame[f"{prefix}_rsi_14"] = ta.momentum.rsi(close, 14)
     frame[f"{prefix}_rsi_30"] = ta.momentum.rsi(close, 30)
 
+    frame[f"{prefix}_sma_20"] = ta.trend.sma_indicator(close, 20)
+    frame[f"{prefix}_sma_50"] = ta.trend.sma_indicator(close, 50)
+
     ema_34 = ta.trend.ema_indicator(close, 34)
     ema_89 = ta.trend.ema_indicator(close, 89)
     frame[f"{prefix}_ema_34"] = ema_34
@@ -90,7 +82,7 @@ def get_all_dataframes() -> list[pd.DataFrame]:
     Returns:
         list[pd.DataFrame]: List of processed DataFrames.
     """
-    unify_config = get_unify_config()
+    unify_config = file.require("py/unify.json")
     dataframes = []
 
     for conf in unify_config:
@@ -151,15 +143,12 @@ def split_to_max_and_small(
     return max_df, small_dataframes
 
 
-def main():
+def unify():
     """
     Main function to unify and process dataframes, then save the result to a CSV file.
     """
     dataframes = get_all_dataframes()
     max_df, small_dataframes = split_to_max_and_small(dataframes)
-
-    print(max_df.head())
-    print("Small DataFrames count:", len(small_dataframes))
 
     # Join smaller DataFrames to the largest one
     for small_df in small_dataframes:
@@ -168,10 +157,43 @@ def main():
     # Drop rows with missing values
     max_df.dropna(inplace=True)
 
+    print(f"Final DataFrame columns: {max_df.columns.to_list()}")
+
     # Save the final DataFrame to a CSV file
     output_path = "ignore/stock/finalize_copilot.csv"
     file.write(output_path, max_df.to_csv())
 
 
+class Unify_CLI(object):
+    """
+    Class to handle the unification of DataFrames based on a configuration file.
+    """
+
+    def unify(self):
+        unify()
+
+    def train(self, source):
+        """
+        Process the source data using a processor module.
+
+        Args:
+            source (str): The path to the source data.
+        """
+        _source = file.get_source(source)
+
+        print(f"Start processing data for {_source['filepath']}")
+
+        x, y = processor.preprocess_unified_data(_source["dataframe"])
+
+        import logistic_reg_model
+
+        print(f"Start training unified data for {_source['filepath']}")
+        _model = logistic_reg_model.train(x.values, y.values)
+
+        # with open(_source["filepath"], "w") as f:
+        #     f.write(dataframe.to_csv(index_label="index"))
+
+
 if __name__ == "__main__":
-    main()
+    unify_cli = Unify_CLI()
+    fire.Fire(unify_cli)

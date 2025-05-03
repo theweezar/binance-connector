@@ -1,6 +1,7 @@
 import re
 import os
 import pandas
+import json
 from sklearn.linear_model import LogisticRegression
 from pathlib import Path
 import pickle
@@ -84,3 +85,21 @@ def load(path) -> LogisticRegression:
     with open(path, "rb") as f:
         _model = pickle.load(f)
     return _model
+
+def require(path: str) -> dict:
+    """
+    Load JSON file.
+
+    Args:
+        path (str): The path to the JSON file.
+
+    Returns:
+        *: The JSON data.
+    """
+    _path = resolve(path)
+    if not os.path.exists(_path):
+        e = "File not found: {_path}".format(_path=_path)
+        raise FileNotFoundError(e)
+    with open(_path, "r") as json_file:
+        return json.load(json_file)
+

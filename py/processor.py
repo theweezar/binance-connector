@@ -189,7 +189,20 @@ def preprocessing_data(
 
 def calc_price_if_reverse_rsi(
     prices: pandas.Series, desired_rsi: float, period: int, price_offset: int
-):
+) -> float:
+    """
+    Calculate the price if RSI reaches a desired value.
+
+    Args:
+        prices (pandas.Series): The input price series.
+        desired_rsi (float): The desired RSI value.
+        period (int): The RSI period.
+        price_offset (int): The price offset.
+    
+    Returns:
+        float: The price at which the RSI reaches the desired value.
+    """
+
     this_prices = prices.copy()
     current_rsi = ta.momentum.rsi(this_prices, period)
 
@@ -206,3 +219,68 @@ def calc_price_if_reverse_rsi(
         this_rsi = rsi_add_offset[length - 1]
 
     return this_prices[length - 1]
+
+
+def preprocess_unified_data(
+    dataframe: pandas.DataFrame,
+) -> tuple[pandas.DataFrame, pandas.DataFrame]:
+    """
+    Preprocesses the unified DataFrame by scaling and selecting features.
+
+    Args:
+        dataframe (pandas.DataFrame): The input DataFrame.
+
+    Returns:
+        tuple: A tuple containing the scaled features (x), target (y).
+    """
+
+    standard_cols = []
+    minmax_cols = []
+    drop_cols = []
+
+    standard_keywords = [
+        "open",
+        "high",
+        "low",
+        "close",
+        "price_change",
+        "volatility",
+        "sma",
+        "ema_34",
+        "ema_89",
+        "macd",
+        "macd_signal",
+    ]
+
+    minmax_keywords = [
+        "rsi",
+        "adx",
+        "ema_trend",
+    ]
+
+    for col in dataframe.columns:
+        if any(keyword in col for keyword in standard_keywords):
+            standard_cols.append(col)
+        elif any(keyword in col for keyword in minmax_keywords):
+            minmax_cols.append(col)
+        else:
+            drop_cols.append(col)
+
+    # Initialize scalers
+    standard_scaler = StandardScaler()
+    minmax_scaler = MinMaxScaler()
+
+    # Fit and transform
+    df_scaled = dataframe.copy()
+
+    if standard_cols:
+        df_scaled[standard_cols] = standard_scaler.fit_transform(dataframe[standard_cols])
+
+    if minmax_cols:
+        df_scaled[minmax_cols] = minmax_scaler.fit_transform(dataframe[minmax_cols])
+
+    # print("Dropping columns:", drop_cols)
+    df_scaled.drop(columns=drop_cols, inplace=True)
+    y_target = (dataframe["btc_type"] == "U").astype(int)
+
+    return df_scaled, y_target
