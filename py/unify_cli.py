@@ -143,36 +143,34 @@ def split_to_max_and_small(
     return max_df, small_dataframes
 
 
-def unify():
-    """
-    Main function to unify and process dataframes, then save the result to a CSV file.
-    """
-    dataframes = get_all_dataframes()
-    max_df, small_dataframes = split_to_max_and_small(dataframes)
-
-    # Join smaller DataFrames to the largest one
-    for small_df in small_dataframes:
-        max_df = max_df.join(small_df, on="timestamp")
-
-    # Drop rows with missing values
-    max_df.dropna(inplace=True)
-
-    print(f"Final DataFrame columns: {max_df.columns.to_list()}")
-
-    # Save the final DataFrame to a CSV file
-    output_path = "ignore/stock/finalize_copilot.csv"
-    file.write(output_path, max_df.to_csv())
-
-
 class Unify_CLI(object):
     """
     Class to handle the unification of DataFrames based on a configuration file.
     """
 
-    def unify(self):
-        unify()
+    def unify(self, output: str = "ignore/stock/finalize_copilot.csv"):
+        """
+        Main function to unify and process dataframes, then save the result to a CSV file.
 
-    def train(self, source):
+        Args:
+            output (str): The path to the output unified CSV file.
+        """
+        dataframes = get_all_dataframes()
+        max_df, small_dataframes = split_to_max_and_small(dataframes)
+
+        # Join smaller DataFrames to the largest one
+        for small_df in small_dataframes:
+            max_df = max_df.join(small_df, on="timestamp")
+
+        # Drop rows with missing values
+        max_df.dropna(inplace=True)
+
+        # print(f"Final DataFrame columns: {max_df.columns.to_list()}")
+
+        # Save the final DataFrame to a CSV file
+        file.write(output, max_df.to_csv(lineterminator="\n"))
+
+    def train(self, source: str = "ignore/stock/finalize_copilot.csv"):
         """
         Process the source data using a processor module.
 

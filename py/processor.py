@@ -281,6 +281,6 @@ def preprocess_unified_data(
 
     # print("Dropping columns:", drop_cols)
     df_scaled.drop(columns=drop_cols, inplace=True)
-    y_target = (dataframe["btc_type"] == "U").astype(int)
+    y_target = dataframe["btc_type"]
 
     return df_scaled, y_target

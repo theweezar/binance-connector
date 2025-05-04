@@ -15,6 +15,6 @@ interval="1d"
 
 # python py/cli.py rsi_reverse --source=$path/$symbol.csv --window=6 --offset=100 --desired=81,82,83,84,85,86,87,88,89,90
 
-# python py/unify_cli.py unify
-python py/unify_cli.py train --source=$path/stock/finalize_copilot.csv
+python py/unify_cli.py unify --output=$path/unify/unified_learning_data.csv
+python py/unify_cli.py train --source=$path/unify/unified_learning_data.csv
 
