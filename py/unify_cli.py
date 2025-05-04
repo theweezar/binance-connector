@@ -7,6 +7,7 @@ import datetime
 import re
 import fire
 import processor
+from sklearn.metrics import accuracy_score
 
 
 def convert_date_to_timestamp(date_str: str) -> str:
@@ -70,19 +71,20 @@ def process_dataframe(dataframe: pd.DataFrame, prefix: str = "") -> pd.DataFrame
 
     # Add type and next_type columns
     frame[f"{prefix}_type"] = (close >= _open).astype(int).astype(str)
-    frame[f"{prefix}_next_type"] = frame[f"{prefix}_type"].shift(-1)
+    # frame[f"{prefix}_next_type"] = frame[f"{prefix}_type"].shift(-1)
 
     return frame
 
 
-def get_all_dataframes() -> list[pd.DataFrame]:
+def get_all_dataframes(config_path: str) -> list[pd.DataFrame]:
     """
     Load and process all dataframes based on the unify configuration.
 
     Returns:
         list[pd.DataFrame]: List of processed DataFrames.
     """
-    unify_config = file.require("py/unify.json")
+    print(f"Loading unify config from {config_path}")
+    unify_config = file.require(config_path)
     dataframes = []
 
     for conf in unify_config:
@@ -96,6 +98,17 @@ def get_all_dataframes() -> list[pd.DataFrame]:
             col_conf["from"]: col_conf["to"].format(prefix=prefix)
             for col_conf in rename_config
         }
+        # Collect original column names about to be renamed
+        rename_columns = [col_conf["from"] for col_conf in rename_config]
+
+        # Collect all column names
+        df_columns = df.columns.tolist()
+
+        # Remove columns that are not in rename_columns
+        drop_columns = [col for col in df_columns if col not in rename_columns]
+        df.drop(columns=drop_columns, inplace=True)
+        print(f"Drop columns: {drop_columns} in {conf['path']}")
+
         df.rename(columns=rename_map, inplace=True)
         df.replace({r",": ""}, inplace=True, regex=True)
 
@@ -143,19 +156,52 @@ def split_to_max_and_small(
     return max_df, small_dataframes
 
 
+def select_df_range(df: pd.DataFrame, range: str) -> pd.DataFrame:
+    """
+    Select a range of rows from the DataFrame based on start and end timestamps.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+        range (str): The range of rows to select, in the format "start:end".
+
+    Returns:
+        pd.DataFrame: The selected range of rows from the DataFrame.
+    """
+
+    range_split = range.strip().split(":")
+    start = (
+        int(range_split[0]) if len(range_split) > 0 and range_split[0] != "" else None
+    )
+    end = int(range_split[1]) if len(range_split) > 1 and range_split[1] != "" else None
+
+    if start and end:
+        return df[start:end]
+    elif start:
+        return df[start:]
+    elif end:
+        return df[:end]
+    else:
+        return df
+
+
 class Unify_CLI(object):
     """
     Class to handle the unification of DataFrames based on a configuration file.
     """
 
-    def unify(self, output: str = "ignore/stock/finalize_copilot.csv"):
+    def unify(
+        self,
+        config: str = "config/unify.json",
+        output: str = "ignore/stock/unified.csv",
+        select: str = "",
+    ):
         """
         Main function to unify and process dataframes, then save the result to a CSV file.
 
         Args:
             output (str): The path to the output unified CSV file.
         """
-        dataframes = get_all_dataframes()
+        dataframes = get_all_dataframes(config)
         max_df, small_dataframes = split_to_max_and_small(dataframes)
 
         # Join smaller DataFrames to the largest one
@@ -165,12 +211,12 @@ class Unify_CLI(object):
         # Drop rows with missing values
         max_df.dropna(inplace=True)
 
-        # print(f"Final DataFrame columns: {max_df.columns.to_list()}")
-
+        max_df = select_df_range(max_df, select)
         # Save the final DataFrame to a CSV file
         file.write(output, max_df.to_csv(lineterminator="\n"))
+        print(f"Unified data saved to {output}")
 
-    def train(self, source: str = "ignore/stock/finalize_copilot.csv"):
+    def train(self, source: str = "", export: str = "ignore/unified_model.pkl"):
         """
         Process the source data using a processor module.
 
@@ -188,8 +234,23 @@ class Unify_CLI(object):
         print(f"Start training unified data for {_source['filepath']}")
         _model = logistic_reg_model.train(x.values, y.values)
 
-        # with open(_source["filepath"], "w") as f:
-        #     f.write(dataframe.to_csv(index_label="index"))
+        file.export_py_object(export, _model)
+
+    def predict(self, source, model):
+        _source = file.get_source(source)
+
+        print(f"Start processing data for {_source['filepath']}")
+
+        x, y = processor.preprocess_unified_data(_source["dataframe"])
+        _model = file.load(model)
+        y_pred = _model.predict(x.values)
+
+        print(f"Prediction:\n{y_pred}")
+        print(f"Actual:\n{y.values}")
+
+        accuracy = accuracy_score(y.values, y_pred)
+
+        print(f"Model Accuracy: {accuracy:.2f}")
 
 
 if __name__ == "__main__":

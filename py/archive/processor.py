@@ -65,7 +65,7 @@ def process(frame: pandas.DataFrame):
 
 def export_csv(path: str, frame: pandas.DataFrame):
     with open(path, "w") as csv_file:
-        csv_file.write(frame.to_csv(index_label="index"))
+        csv_file.write(frame.to_csv(index_label="index", lineterminator="\n"))
 
 
 def detect_ema_signal(frame: pandas.DataFrame):

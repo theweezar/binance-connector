@@ -236,20 +236,21 @@ def preprocess_unified_data(
 
     standard_cols = []
     minmax_cols = []
-    drop_cols = []
+    drop_cols = ["btc_type"]
 
     standard_keywords = [
-        "open",
-        "high",
-        "low",
-        "close",
-        "price_change",
-        "volatility",
+        # "open",
+        # "high",
+        # "low",
+        # "close",
+        # "price_change",
+        # "volatility",
         "sma",
-        "ema_34",
-        "ema_89",
-        "macd",
-        "macd_signal",
+        # "ema_34",
+        # "ema_89",
+        # "macd",
+        # "macd_signal",
+        "type",
     ]
 
     minmax_keywords = [
@@ -279,8 +280,9 @@ def preprocess_unified_data(
     if minmax_cols:
         df_scaled[minmax_cols] = minmax_scaler.fit_transform(dataframe[minmax_cols])
 
-    # print("Dropping columns:", drop_cols)
+    print(f"Dropping columns: {", ".join(drop_cols)}\n")
     df_scaled.drop(columns=drop_cols, inplace=True)
+    print(f"Selecting columns: {", ".join(df_scaled.columns.to_list())}\n")
     y_target = dataframe["btc_type"]
 
     return df_scaled, y_target

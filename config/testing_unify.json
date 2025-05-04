@@ -1,6 +1,6 @@
 [
     {
-        "path": "ignore/stock/S&P 500_HistoricalData_1744300674147.csv",
+        "path": "ignore/stock/testing_2020_2025/S&P 500 Historical Data.csv",
         "rename": {
             "columns": [
                 {
@@ -23,7 +23,7 @@
                     "type": "float"
                 },
                 {
-                    "from": "Close/Last",
+                    "from": "Price",
                     "to": "{prefix}_close",
                     "type": "float"
                 }
@@ -32,7 +32,7 @@
         }
     },
     {
-        "path": "ignore/stock/Nasdaq_HistoricalData_1744301075920.csv",
+        "path": "ignore/stock/testing_2020_2025/NASDAQ Composite Historical Data.csv",
         "rename": {
             "columns": [
                 {
@@ -55,7 +55,7 @@
                     "type": "float"
                 },
                 {
-                    "from": "Close/Last",
+                    "from": "Price",
                     "to": "{prefix}_close",
                     "type": "float"
                 }
@@ -64,7 +64,7 @@
         }
     },
     {
-        "path": "ignore/stock/Gold Futures Historical Data.csv",
+        "path": "ignore/stock/testing_2020_2025/XAU_USD Historical Data.csv",
         "rename": {
             "columns": [
                 {
@@ -96,7 +96,7 @@
         }
     },
     {
-        "path": "ignore/BTC.csv",
+        "path": "ignore/stock/testing_2020_2025/BTC.csv",
         "rename": {
             "columns": [
                 {

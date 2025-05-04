@@ -7,7 +7,7 @@ from pathlib import Path
 import pickle
 
 
-def resolve(path: str) -> str:
+def resolve(path: str) -> Path:
     """
     Resolve the absolute path from a relative path.
 
@@ -15,7 +15,7 @@ def resolve(path: str) -> str:
         path (str): The relative path.
 
     Returns:
-        str: The absolute path.
+        Path: The absolute path.
     """
     return Path(os.path.join(os.getcwd(), path)).resolve()
 
@@ -82,9 +82,14 @@ def load(path) -> LogisticRegression:
     Returns:
         LogisticRegression: The loaded model.
     """
+    _path = resolve(path)
+    if not os.path.exists(_path):
+        e = "Can not load file. File not found: {_path}".format(_path=_path)
+        raise FileNotFoundError(e)
     with open(path, "rb") as f:
         _model = pickle.load(f)
     return _model
+
 
 def require(path: str) -> dict:
     """
@@ -102,4 +107,3 @@ def require(path: str) -> dict:
         raise FileNotFoundError(e)
     with open(_path, "r") as json_file:
         return json.load(json_file)
-

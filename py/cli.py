@@ -67,7 +67,7 @@ class Model(object):
         dataframe = processor.process(_source["dataframe"])
 
         with open(_source["filepath"], "w") as f:
-            f.write(dataframe.to_csv(index_label="index"))
+            f.write(dataframe.to_csv(index_label="index", lineterminator="\n"))
 
     def rsi_reverse(self, source, window, offset, desired):
         """
