@@ -1,8 +1,8 @@
 import fire
 import importlib
-import processor
-import file
+from util import file
 from sklearn.metrics import accuracy_score
+from processor import indicator, preprocessor
 
 
 class Model(object):
@@ -16,7 +16,7 @@ class Model(object):
             export (str, optional): The path to export the trained model. Defaults to "".
         """
         _source = file.get_source(source)
-        x, y, symbol = processor.preprocessing_data(_source["dataframe"], dropna=True)
+        x, y, symbol = preprocessor.process_data(_source["dataframe"], dropna=True)
 
         print(f"Start analyzing price data for {symbol}")
 
@@ -36,7 +36,7 @@ class Model(object):
             timesteps (int, optional): The number of timesteps for prediction. Defaults to 60.
         """
         _source = file.get_source(source)
-        x, y, symbol = processor.preprocessing_data(_source["dataframe"], dropna=False)
+        x, y, symbol = preprocessor.process_data(_source["dataframe"], dropna=False)
         model_path = file.resolve(model)
         _model = file.load(model_path)
 
@@ -64,7 +64,7 @@ class Model(object):
 
         print(f"Start processing data for {_source['filepath']}")
 
-        dataframe = processor.process(_source["dataframe"])
+        dataframe = indicator.apply(_source["dataframe"])
 
         with open(_source["filepath"], "w") as f:
             f.write(dataframe.to_csv(index_label="index", lineterminator="\n"))
@@ -83,13 +83,22 @@ class Model(object):
         dataframe = _source["dataframe"]
         close = dataframe["close"]
         desired_list = list(desired)
+        _offset = float(str(offset).strip())
 
         for item in desired_list:
             desired_rsi = float(str(item).strip())
-            price = processor.calc_price_if_reverse_rsi(
-                close, desired_rsi, window, offset
-            )
-            print(f"Price if RSI reaches {desired_rsi}: {price}")
+
+            if _offset > 0:
+                price = indicator.calc_price_if_reverse_rsi_reach(
+                    close, desired_rsi, window, _offset
+                )
+                print(f"Price if RSI reaches {desired_rsi}: {price}")
+
+            elif _offset < 0:
+                price = indicator.calc_price_if_reverse_rsi_drop(
+                    close, desired_rsi, window, _offset
+                )
+                print(f"Price if RSI drops below {desired_rsi}: {price}")
 
 
 if __name__ == "__main__":

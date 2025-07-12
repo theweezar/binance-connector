@@ -229,7 +229,7 @@ class Unify_CLI(object):
 
         x, y = processor.preprocess_unified_data(_source["dataframe"])
 
-        import logistic_reg_model
+        import py.model.logistic_reg_model as logistic_reg_model
 
         print(f"Start training unified data for {_source['filepath']}")
         _model = logistic_reg_model.train(x.values, y.values)

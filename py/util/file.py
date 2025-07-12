@@ -2,9 +2,7 @@ import re
 import os
 import pandas
 import json
-from sklearn.linear_model import LogisticRegression
 from pathlib import Path
-import pickle
 
 
 def resolve(path: str) -> Path:
@@ -43,25 +41,6 @@ def get_source(source: str) -> dict[str, pandas.DataFrame, str]:
     }
 
 
-def export_py_object(path: str, model: object):
-    """
-    Export the trained model to a file.
-
-    Args:
-        path (str): The path to export the model.
-        model: The trained model.
-    """
-    export_path = resolve(path)
-    existing = Path(export_path)
-    if existing.is_file():
-        print(f"Removed existing file: {export_path}")
-        existing.unlink()
-
-    with open(export_path, "wb") as f:
-        pickle.dump(model, f)
-        print(f"Model exported to {export_path}")
-
-
 def write(path: str, content: str, mode="w"):
     """
     Write content to a file.
@@ -70,25 +49,6 @@ def write(path: str, content: str, mode="w"):
 
     with open(_path, mode) as f:
         f.write(content)
-
-
-def load(path) -> LogisticRegression:
-    """
-    Load a trained model from a file.
-
-    Args:
-        path (str): The path to the model file.
-
-    Returns:
-        LogisticRegression: The loaded model.
-    """
-    _path = resolve(path)
-    if not os.path.exists(_path):
-        e = "Can not load file. File not found: {_path}".format(_path=_path)
-        raise FileNotFoundError(e)
-    with open(path, "rb") as f:
-        _model = pickle.load(f)
-    return _model
 
 
 def require(path: str) -> dict:
