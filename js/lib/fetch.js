@@ -198,7 +198,6 @@ async function execute(opts) {
         interval: opts.interval
     };
     const cwd = process.cwd();
-    // const csvFileName = `export_${moment().format('YYYYMMDDkkmmss')}_binance_${params.symbol}_${params.interval}.csv`;
     const exportFilePath = path.join(cwd, opts.path);
 
     console.log(`Fetching data with ${timeSlots.length} time slots`);

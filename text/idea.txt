@@ -1,0 +1,32 @@
+create library to fetch price from Binance following instruction:
+- use binance-connector-python library as a connector to Binance via api.
+- use python-fire library so script can work on CLI.
+- class's entered fire.Fire method, is named Price_CLI.
+- fetch Kline/Candlestick Data by time chunk, each time chunk has 500 candles, example: fetch chart 1D by 3 time chunks, script need to fetch data back from 1500 days till today.
+- script can export Kline/Candlestick Data to csv file.
+- script can get price symbol from CLI argument named "--symbol"
+- script can get price interval like 1h, 1d, 15m,... from CLI argument named "--interval"
+- script can get export file path from CLI argument named "--path"
+- script can get time chunk from CLI argument named "--chunk"
+
+---
+
+update current logic:
+- export CSV file with these column names: symbol,date,start,end,open,high,low,close,vol,type. Detail: symbol is crypto symbol, date is date of open time with format YYYY-MM-DD, start is open time with format YYYY-MM-DD HH:MM:SS, end is end time with format YYYY-MM-DD HH:MM:SS, open is opening price, high is highest price, low is lowest price, close is closing price, vol is volumn, type is 1 or 0 showing the candles go up or down.
+- update print last message with format: "Exported symbol={symbol} with {len(all_klines)} rows to {path}. {path} need to be resolved to full system path".
+- update "chunk" argument description: "Number of chunks to fetch. The higher the chunk is provided, the longer the time to process",  and improve it.
+
+---
+
+update function fetch:
+- add 2 more arguments: "from", "to". Both are date string with format YYYY-MM-DD.
+- enhance logic to fetch price from "from" arg to "to" arg.
+- if "chunk", "from", "to" arguments are provided, prioritize the logic to fetch by chunk first.
+- separate CSV writer logic into a single function ( with argument "all_klines ) which is called in method fetch.
+- add logic to validate arguments: "from", "to". They need to be co-required when "chunk" is not provided.
+
+---
+
+update code:
+- move method _write_csv to py\lib\file.py and rename it from _write_csv to write_klines_csv
+- in py\service\price.py, import file.py to use function write_klines_csv in method fetch.
