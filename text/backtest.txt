@@ -1,0 +1,14 @@
+create library to perform back test and plot following instruction:
+- use `python-fire` library so script can work on CLI.
+- class's entered `fire.Fire` method, is named `Back_Test_CLI`.
+- create Back_Test_CLI's method `compute`.
+- method `compute` has 1 arguments: `source`.
+- get data frame by `file.get_source(source)`.
+- data frame already has indicators needed.
+- perform back test following conditions and instruction:
+    - when long: `df["rsi_6_of_low"]` < 40.
+    - when short: `df["rsi_6_of_high"]` > 85.
+    - set `position`: long is 1, short is 0, not matching is '-', to the matched rows.
+- plot the data frame following instruction:
+    - plot the last 1000 rows.
+    - plot the marker if `position` exists, red marker for short position, green marker for long position

@@ -2,7 +2,7 @@ import fire
 import importlib
 from util import file
 from sklearn.metrics import accuracy_score
-from processor import indicator, preprocessor
+from processors import preprocessor
 
 
 class Model(object):
@@ -52,53 +52,6 @@ class Model(object):
         accuracy = accuracy_score(_y.values, y_pred)
 
         print(f"Model Accuracy: {accuracy:.2f}")
-
-    def process(self, source):
-        """
-        Process the source data using a processor module.
-
-        Args:
-            source (str): The path to the source data.
-        """
-        _source = file.get_source(source)
-
-        print(f"Start processing data for {_source['filepath']}")
-
-        dataframe = indicator.apply(_source["dataframe"])
-
-        with open(_source["filepath"], "w") as f:
-            f.write(dataframe.to_csv(index_label="index", lineterminator="\n"))
-
-    def rsi_reverse(self, source, window, offset, desired):
-        """
-        Calculate the price if RSI reaches a desired value.
-
-        Args:
-            source (str): The path to the source data.
-            window (int): The RSI window.
-            offset (float): The price offset.
-            desired (str): The desired RSI value list separate by comma (,).
-        """
-        _source = file.get_source(source)
-        dataframe = _source["dataframe"]
-        close = dataframe["close"]
-        desired_list = list(desired)
-        _offset = float(str(offset).strip())
-
-        for item in desired_list:
-            desired_rsi = float(str(item).strip())
-
-            if _offset > 0:
-                price = indicator.calc_price_if_reverse_rsi_reach(
-                    close, desired_rsi, window, _offset
-                )
-                print(f"Price if RSI reaches {desired_rsi}: {price}")
-
-            elif _offset < 0:
-                price = indicator.calc_price_if_reverse_rsi_drop(
-                    close, desired_rsi, window, _offset
-                )
-                print(f"Price if RSI drops below {desired_rsi}: {price}")
 
 
 if __name__ == "__main__":

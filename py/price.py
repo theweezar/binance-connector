@@ -189,7 +189,9 @@ class Price_CLI:
         else:
             print("No new data to merge.")
 
-    def fetch_by_chunk(self, client: Spot, symbol: str, interval: str, path: str, chunk: int):
+    def fetch_by_chunk(
+        self, client: Spot, symbol: str, interval: str, path: str, chunk: int
+    ):
         """
         Fetch Kline/Candlestick data by chunk count and export to CSV.
 
@@ -270,26 +272,25 @@ class Price_CLI:
             all_klines (list): List of kline data.
             append (bool): If True, append to file. If False, overwrite.
         """
+        headers = [
+            "symbol",
+            "date",
+            "start",
+            "end",
+            "open",
+            "high",
+            "low",
+            "close",
+            "vol",
+            "type",
+        ]
         resolved_path = file.resolve(path)
         mode = "a" if append else "w"
         write_header = not append or not os.path.exists(resolved_path)
         with open(resolved_path, mode, newline="") as csvfile:
-            writer = csv.writer(csvfile)
+            writer = csv.DictWriter(csvfile, fieldnames=headers)
             if write_header:
-                writer.writerow(
-                    [
-                        "symbol",
-                        "date",
-                        "start",
-                        "end",
-                        "open",
-                        "high",
-                        "low",
-                        "close",
-                        "vol",
-                        "type",
-                    ]
-                )
+                writer.writeheader()
             for row in all_klines:
                 open_time = datetime.datetime.fromtimestamp(
                     row[0] / 1000, tz=datetime.timezone.utc
@@ -304,18 +305,18 @@ class Price_CLI:
                 vol = float(row[5])
                 candle_type = 1 if close_price > open_price else 0
                 writer.writerow(
-                    [
-                        symbol,
-                        open_time.strftime("%Y-%m-%d"),
-                        open_time.strftime("%Y-%m-%d %H:%M:%S"),
-                        close_time.strftime("%Y-%m-%d %H:%M:%S"),
-                        open_price,
-                        high_price,
-                        low_price,
-                        close_price,
-                        vol,
-                        candle_type,
-                    ]
+                    {
+                        "symbol": symbol,
+                        "date": open_time.strftime("%Y-%m-%d"),
+                        "start": open_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "end": close_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "open": open_price,
+                        "high": high_price,
+                        "low": low_price,
+                        "close": close_price,
+                        "vol": vol,
+                        "type": candle_type,
+                    }
                 )
 
 

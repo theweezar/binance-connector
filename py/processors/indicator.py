@@ -21,14 +21,27 @@ def apply(frame: pandas.DataFrame):
     frame["price_change"] = close.pct_change()
     frame["volatility"] = close.rolling(10).std()
 
+    # Calculate RSI for different periods
     rsi_6 = ta.momentum.rsi(close, 6)
     rsi_7 = ta.momentum.rsi(close, 7)
     rsi_9 = ta.momentum.rsi(close, 9)
     rsi_12 = ta.momentum.rsi(close, 12)
     rsi_14 = ta.momentum.rsi(close, 14)
     rsi_30 = ta.momentum.rsi(close, 30)
+
+    rsi_6_of_high = ta.momentum.rsi(high, 6)
+    rsi_9_of_high = ta.momentum.rsi(high, 9)
+    rsi_14_of_high = ta.momentum.rsi(high, 14)
+
+    rsi_6_of_low = ta.momentum.rsi(low, 6)
+    rsi_9_of_low = ta.momentum.rsi(low, 9)
+    rsi_14_of_low = ta.momentum.rsi(low, 14)
+
     ema_34 = ta.trend.ema_indicator(close, 34)
     ema_89 = ta.trend.ema_indicator(close, 89)
+    ma_20 = ta.trend.sma_indicator(close, 20)
+    ma_50 = ta.trend.sma_indicator(close, 50)
+    ma_200 = ta.trend.sma_indicator(close, 200)
 
     frame["rsi_6"] = rsi_6
     frame["rsi_7"] = rsi_7
@@ -36,8 +49,20 @@ def apply(frame: pandas.DataFrame):
     frame["rsi_12"] = rsi_12
     frame["rsi_14"] = rsi_14
     frame["rsi_30"] = rsi_30
+
+    frame["rsi_6_of_high"] = rsi_6_of_high
+    frame["rsi_9_of_high"] = rsi_9_of_high
+    frame["rsi_14_of_high"] = rsi_14_of_high
+
+    frame["rsi_6_of_low"] = rsi_6_of_low
+    frame["rsi_9_of_low"] = rsi_9_of_low
+    frame["rsi_14_of_low"] = rsi_14_of_low
+
     frame["ema_34"] = ema_34
     frame["ema_89"] = ema_89
+    frame["ma_20"] = ma_20
+    frame["ma_50"] = ma_50
+    frame["ma_200"] = ma_200
 
     ema_trend = ema_34 - ema_89
 
@@ -52,7 +77,7 @@ def apply(frame: pandas.DataFrame):
 
     frame["adx_14"] = ta.trend.ADXIndicator(high, low, close).adx()
 
-    frame["next_type"] = frame["type"].shift(-1)
+    # frame["next_type"] = frame["type"].shift(-1)
 
     return frame
 

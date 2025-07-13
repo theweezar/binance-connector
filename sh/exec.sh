@@ -13,11 +13,11 @@ interval="1d"
 # python py/cli.py process --source=$path/$symbol\_now.csv
 # python py/cli.py predict --source=$path/$symbol\_now.csv --model=$path/$symbol\_logistic_reg_model.pkl --timesteps=21
 
-# python py/cli.py rsi_reverse --source=$path/$symbol.csv --window=6 --offset=-0.01 --desired=15,20,25,35,45,55
-# python py/cli.py rsi_reverse --source=$path/$symbol.csv --window=6 --offset=0.01 --desired=86,87,88,89,90,91,92,93,94,95,96,97,98,99
+# python py/rsi.py reverse --source=$path/$symbol.csv --window=6 --offset=-0.01 --desired=15,20,25,35,45,55
+# python py/rsi.py reverse --source=$path/$symbol.csv --window=6 --offset=0.01 --desired=86,87,88,89,90,91,92,93,94,95,96,97,98,99
 
 # XLM
-# python py/cli.py rsi_reverse --source=$path/$symbol.csv --window=6 --offset=0.001 --desired=86,87,88,89,90,91,92,93,94,95,96,97,98,99
+# python py/rsi.py reverse --source=$path/$symbol.csv --window=6 --offset=0.001 --desired=86,87,88,89,90,91,92,93,94,95,96,97,98,99
 
 # python py/unify_cli.py unify --output=ignore/unify/unified_learning_2020_2025_data.csv --config=config/learning_unify.json
 # python py/unify_cli.py unify --output=ignore/unify/unified_testing_2020_2025_data.csv --config=config/testing_unify.json --select="-23:"
