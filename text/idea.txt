@@ -30,3 +30,22 @@ update function fetch:
 update code:
 - move method _write_csv to py\lib\file.py and rename it from _write_csv to write_klines_csv
 - in py\service\price.py, import file.py to use function write_klines_csv in method fetch.
+
+---
+
+update code:
+- move candle_ms, est_candles, est_chunks, end_time calculation when "from", "to" arguments are provided to a method calc_end_time_from_to().
+- call method calc_end_time_from_to() in method fetch().
+
+---
+
+update code:
+- add 1 more argument: "merge".
+- if "merge" does not equal "true" or is not provided, then everything works normally, nothing changes.
+- if "merge" equals "true", the script works following instruction:
++ check if the CSV file does not exist, then everything works normally, nothing changes.
++ check if the CSV file exists, ignore the "chunk", "from", "to" arguments, read the CSV file to get the last "start" time.
++ use the last "start" time to calculate how many chunks need to be fetched till now.
++ fetch price from the last "start" time till now.
++ after fetching price, merge the new data into the current data in CSV file.
+

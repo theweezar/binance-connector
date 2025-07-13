@@ -17,6 +17,65 @@ class Price_CLI:
         python price.py fetch --symbol=BTCUSDT --interval=1d --path=ignore/btc.csv --from_=2023-01-01 --to=2025-07-12
     """
 
+    limit = 500
+
+    def calc_end_time_from_to(self, interval: str, from_: str, to: str):
+        """
+        Calculate candle_ms, est_candles, est_chunks, start_time, end_time for given interval and date range.
+        Accepts from_ and to in "%Y-%m-%d %H:%M:%S" or "%Y-%m-%d" format.
+
+        Args:
+            interval (str): Kline interval, e.g. "1d", "1h"
+            from_ (str): Start date as string
+            to (str): End date as string
+
+        Returns:
+            tuple: (candle_ms, est_candles, est_chunks, start_time, end_time)
+        """
+        limit = self.limit
+
+        def parse_date(dt_str):
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    return datetime.datetime.strptime(dt_str, fmt)
+                except Exception:
+                    continue
+            raise ValueError(
+                'Arguments "from_" and "to" must be in format YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'
+            )
+
+        from_dt = parse_date(from_)
+        to_dt = parse_date(to)
+        if from_dt > to_dt:
+            raise ValueError('"from_" date must be before or equal to "to" date.')
+
+        start_time = int(
+            from_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
+        )
+        end_time = int(to_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        total_ms = end_time - start_time
+        interval_map = {
+            "1m": 60 * 1000,
+            "3m": 3 * 60 * 1000,
+            "5m": 5 * 60 * 1000,
+            "15m": 15 * 60 * 1000,
+            "30m": 30 * 60 * 1000,
+            "1h": 60 * 60 * 1000,
+            "2h": 2 * 60 * 60 * 1000,
+            "4h": 4 * 60 * 60 * 1000,
+            "6h": 6 * 60 * 60 * 1000,
+            "8h": 8 * 60 * 60 * 1000,
+            "12h": 12 * 60 * 60 * 1000,
+            "1d": 24 * 60 * 60 * 1000,
+            "3d": 3 * 24 * 60 * 60 * 1000,
+            "1w": 7 * 24 * 60 * 60 * 1000,
+            "1M": 30 * 24 * 60 * 60 * 1000,
+        }
+        candle_ms = interval_map.get(interval, 24 * 60 * 60 * 1000)
+        est_candles = total_ms // candle_ms + 1
+        est_chunks = (est_candles + limit - 1) // limit
+        return candle_ms, est_candles, est_chunks, start_time, end_time
+
     def fetch(
         self,
         symbol: str,
@@ -25,6 +84,7 @@ class Price_CLI:
         chunk: int = None,
         from_: str = None,
         to: str = None,
+        merge: str = None,
     ):
         """
         Fetch Kline/Candlestick data from Binance and export to CSV.
@@ -34,97 +94,173 @@ class Price_CLI:
             interval (str): Interval, e.g. 1d, 1h, 15m
             path (str): Output CSV file path
             chunk (int): Number of chunks to fetch. Each chunk fetches up to 500 candles (Binance API limit).
-                The higher the chunk, the more historical data is fetched and the longer the process takes.
             from_ (str): Start date (YYYY-MM-DD), required if chunk is not provided.
             to (str): End date (YYYY-MM-DD), required if chunk is not provided.
+            merge (str): If "true", merge new data into existing CSV.
         """
         client = Spot()
-        limit = 500
-        all_klines = []
 
-        # If chunk is provided, prioritize chunk logic
+        if merge == "true":
+            self.fetch_and_merge(client, symbol, interval, path)
+            return
+
         if chunk is not None:
-            end_time = int(datetime.datetime.now().timestamp() * 1000)
-            print(
-                f"Fetching {chunk} chunk(s) of {limit} candles each (up to {chunk * limit} candles)..."
+            self.fetch_by_chunk(client, symbol, interval, path, chunk)
+            return
+
+        if from_ and to:
+            self.fetch_by_from_to(client, symbol, interval, path, from_, to)
+            return
+
+        raise ValueError(
+            'Invalid arguments: provide either "chunk", or both "from_" and "to", or "merge=true".'
+        )
+
+    def fetch_and_merge(self, client: Spot, symbol: str, interval: str, path: str):
+        """
+        Merge new kline data into existing CSV file.
+
+        Args:
+            client (Spot): Binance Spot client
+            symbol (str): Symbol to fetch, e.g. BTCUSDT
+            interval (str): Interval, e.g. 1d, 1h, 15m
+            path (str): Output CSV file path
+        """
+        limit = self.limit
+        resolved_path = file.resolve(path)
+        if not os.path.exists(resolved_path):
+            return  # No file, nothing to merge, fallback to normal fetch
+        with open(resolved_path, "r", newline="") as csvfile:
+            reader = csv.DictReader(csvfile)
+            rows = list(reader)
+        if not rows:
+            return  # No data, nothing to merge, fallback to normal fetch
+        last_row = rows[-1]
+        last_start_str = last_row["start"]
+        now_dt = datetime.datetime.now(datetime.timezone.utc)
+        now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+        candle_ms, est_candles, est_chunks, fetch_start, fetch_end = (
+            self.calc_end_time_from_to(interval, last_start_str, now_str)
+        )
+        print(
+            f"Merging: fetching {est_chunks} chunk(s) of {limit} candles each (estimated {est_candles} candles) for interval '{interval}' from {last_start_str} to now ({now_str})..."
+        )
+        new_klines = []
+        while True:
+            klines = client.klines(
+                symbol=symbol,
+                interval=interval,
+                limit=limit,
+                endTime=fetch_end,
             )
-            for i in range(chunk):
-                klines = client.klines(
-                    symbol=symbol, interval=interval, limit=limit, endTime=end_time
-                )
-                if not klines:
-                    break
-                all_klines = klines + all_klines
-                end_time = klines[0][0] - 1
+            if not klines:
+                print("No more data available.")
+                break
+            filtered_klines = [k for k in klines if k[0] >= fetch_start]
+            if not filtered_klines:
+                print("No new data available after last kline.")
+                break
+            new_klines = filtered_klines + new_klines
+            if klines[0][0] <= fetch_start:
+                break
+            fetch_end = klines[0][0] - 1
+
+        if new_klines:
+            last_start_dt = datetime.datetime.strptime(
+                last_start_str, "%Y-%m-%d %H:%M:%S"
+            )
+            last_start_time = int(
+                last_start_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
+            )
+            # Remove last row if it has the same start time as the first new kline
+            dup_rows = [k for k in new_klines if k[0] == last_start_time]
+            if dup_rows:
+                rows.pop()
+                with open(resolved_path, "w", newline="") as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=rows[0].keys())
+                    writer.writeheader()
+                    writer.writerows(rows)
+
+            self.write_klines_csv(symbol, path, new_klines, append=True)
+            abs_path = os.path.abspath(path)
+            print(
+                f"Merged symbol={symbol} with {len(rows) + len(new_klines)} rows to {abs_path}."
+            )
         else:
-            # Validate from_ and to
-            if not from_ or not to:
-                raise ValueError(
-                    'Both "from_" and "to" arguments are required when "chunk" is not provided.'
-                )
-            try:
-                from_dt = datetime.datetime.strptime(from_, "%Y-%m-%d")
-                to_dt = datetime.datetime.strptime(to, "%Y-%m-%d")
-            except Exception:
-                raise ValueError(
-                    'Arguments "from_" and "to" must be in format YYYY-MM-DD.'
-                )
-            if from_dt > to_dt:
-                raise ValueError('"from_" date must be before or equal to "to" date.')
+            print("No new data to merge.")
 
-            start_time = int(
-                from_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
-            )
-            end_time = int(
-                to_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
-            )
-            total_ms = end_time - start_time
-            # Estimate average candle ms for interval
-            interval_map = {
-                "1m": 60 * 1000,
-                "3m": 3 * 60 * 1000,
-                "5m": 5 * 60 * 1000,
-                "15m": 15 * 60 * 1000,
-                "30m": 30 * 60 * 1000,
-                "1h": 60 * 60 * 1000,
-                "2h": 2 * 60 * 60 * 1000,
-                "4h": 4 * 60 * 60 * 1000,
-                "6h": 6 * 60 * 60 * 1000,
-                "8h": 8 * 60 * 60 * 1000,
-                "12h": 12 * 60 * 60 * 1000,
-                "1d": 24 * 60 * 60 * 1000,
-                "3d": 3 * 24 * 60 * 60 * 1000,
-                "1w": 7 * 24 * 60 * 60 * 1000,
-                "1M": 30 * 24 * 60 * 60 * 1000,
-            }
-            candle_ms = interval_map.get(interval, 24 * 60 * 60 * 1000)
-            est_candles = total_ms // candle_ms + 1
-            est_chunks = (est_candles + limit - 1) // limit
-            print(
-                f"Fetching {est_chunks} chunk(s) of {limit} candles each (estimated {est_candles} candles) for interval '{interval}' from {from_} to {to}..."
-            )
-            fetch_end = end_time
-            while True:
-                klines = client.klines(
-                    symbol=symbol, interval=interval, limit=limit, endTime=fetch_end
-                )
-                if not klines:
-                    break
-                # Only keep klines within the start_time
-                filtered_klines = [k for k in klines if k[0] >= start_time]
-                if not filtered_klines:
-                    break
-                all_klines = filtered_klines + all_klines
-                # Stop if the earliest kline is before start_time
-                if klines[0][0] <= start_time:
-                    break
-                fetch_end = klines[0][0] - 1
+    def fetch_by_chunk(self, client: Spot, symbol: str, interval: str, path: str, chunk: int):
+        """
+        Fetch Kline/Candlestick data by chunk count and export to CSV.
 
+        Args:
+            client (Spot): Binance Spot client
+            symbol (str): Symbol to fetch, e.g. BTCUSDT
+            interval (str): Interval, e.g. 1d, 1h, 15m
+            path (str): Output CSV file path
+            chunk (int): Number of chunks to fetch
+        """
+        limit = self.limit
+        all_klines = []
+        end_time = int(datetime.datetime.now().timestamp() * 1000)
+        print(
+            f"Fetching {chunk} chunk(s) of {limit} candles each (up to {chunk * limit} candles)..."
+        )
+        for i in range(chunk):
+            klines = client.klines(
+                symbol=symbol, interval=interval, limit=limit, endTime=end_time
+            )
+            if not klines:
+                break
+            all_klines = klines + all_klines
+            end_time = klines[0][0] - 1
         self.write_klines_csv(symbol, path, all_klines)
         abs_path = os.path.abspath(path)
         print(f"Exported symbol={symbol} with {len(all_klines)} rows to {abs_path}.")
 
-    def write_klines_csv(self, symbol, path, all_klines):
+    def fetch_by_from_to(
+        self, client: Spot, symbol: str, interval: str, path: str, from_: str, to: str
+    ):
+        """
+        Fetch Kline/Candlestick data by date range and export to CSV.
+
+        Args:
+            client (Spot): Binance Spot client
+            symbol (str): Symbol to fetch, e.g. BTCUSDT
+            interval (str): Interval, e.g. 1d, 1h, 15m
+            path (str): Output CSV file path
+            from_ (str): Start date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+            to (str): End date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+        """
+        limit = self.limit
+        all_klines = []
+        candle_ms, est_candles, est_chunks, start_time, end_time = (
+            self.calc_end_time_from_to(interval, from_, to)
+        )
+        print(
+            f"Fetching {est_chunks} chunk(s) of {limit} candles each (estimated {est_candles} candles) for interval '{interval}' from {from_} to {to}..."
+        )
+        fetch_end = end_time
+        while True:
+            klines = client.klines(
+                symbol=symbol, interval=interval, limit=limit, endTime=fetch_end
+            )
+            if not klines:
+                break
+            filtered_klines = [k for k in klines if k[0] >= start_time]
+            if not filtered_klines:
+                break
+            all_klines = filtered_klines + all_klines
+            if klines[0][0] <= start_time:
+                break
+            fetch_end = klines[0][0] - 1
+        self.write_klines_csv(symbol, path, all_klines)
+        abs_path = os.path.abspath(path)
+        print(f"Exported symbol={symbol} with {len(all_klines)} rows to {abs_path}.")
+
+    def write_klines_csv(
+        self, symbol: str, path: str, all_klines: list, append: bool = False
+    ):
         """
         Write kline/candlestick data to CSV.
 
@@ -132,26 +268,28 @@ class Price_CLI:
             symbol (str): Symbol name.
             path (str): Output CSV file path.
             all_klines (list): List of kline data.
+            append (bool): If True, append to file. If False, overwrite.
         """
-
         resolved_path = file.resolve(path)
-
-        with open(resolved_path, "w", newline="") as csvfile:
+        mode = "a" if append else "w"
+        write_header = not append or not os.path.exists(resolved_path)
+        with open(resolved_path, mode, newline="") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(
-                [
-                    "symbol",
-                    "date",
-                    "start",
-                    "end",
-                    "open",
-                    "high",
-                    "low",
-                    "close",
-                    "vol",
-                    "type",
-                ]
-            )
+            if write_header:
+                writer.writerow(
+                    [
+                        "symbol",
+                        "date",
+                        "start",
+                        "end",
+                        "open",
+                        "high",
+                        "low",
+                        "close",
+                        "vol",
+                        "type",
+                    ]
+                )
             for row in all_klines:
                 open_time = datetime.datetime.fromtimestamp(
                     row[0] / 1000, tz=datetime.timezone.utc
