@@ -12,3 +12,12 @@ create library to perform back test and plot following instruction:
 - plot the data frame following instruction:
     - plot the last 1000 rows.
     - plot the marker if `position` exists, red marker for short position, green marker for long position
+
+
+---
+
+update code:
+- `df.loc` is very limited when it comes with multiple conditions, replace `df.loc` with another solution.
+- update RSI conditions:
+    - when long: `df["rsi_6_of_low"] < 27 and df["rsi_9_of_low"] < 30`.
+    - when short: `df["rsi_6_of_high"] > 90 and df["rsi_9_of_high"] > 89`.

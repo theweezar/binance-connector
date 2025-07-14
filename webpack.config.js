@@ -19,9 +19,6 @@ module.exports = [
                     use: {
                         loader: 'babel-loader',
                         options: {
-                            plugins: [
-                                '@babel/plugin-proposal-optional-chaining'
-                            ],
                             presets: ['@babel/preset-env'],
                             cacheDirectory: true
                         }
@@ -29,8 +26,6 @@ module.exports = [
                 }
             ]
         },
-        externals: {
-            'lightweight-charts': 'LightweightCharts'
-        }
+        target: ['web', 'es5']
     }
 ];

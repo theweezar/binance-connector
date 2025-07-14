@@ -27,11 +27,24 @@ class Back_Test_CLI:
 
         # Set position column based on RSI conditions
         df["position"] = "-"
-        df.loc[df["rsi_6_of_low"] < 30, "position"] = 1  # Long
-        df.loc[df["rsi_6_of_high"] > 85, "position"] = 0  # Short
+
+        # Long condition: rsi_6_of_low < 27 and rsi_9_of_low < 30
+        long_mask = (df["rsi_6_of_low"] < 27) & (df["rsi_9_of_low"] < 30)
+        df.loc[long_mask, "position"] = 1  # Long
+
+        # Short condition: rsi_6_of_high > 90 and rsi_9_of_high > 89
+        short_mask = (df["rsi_6_of_high"] > 90) & (df["rsi_9_of_high"] > 89)
+        df.loc[short_mask, "position"] = 0  # Short
 
         # Plot last N rows
         plot_df = df.tail(count).reset_index(drop=True)
+        count_position = df[df["position"] != "-"]
+
+        print(f"Found {len(count_position)} positions in the last {count} rows.")
+
+        # TODO: Write a function to calculate profit/loss based on positions.
+        # TODO: Write a function to calculate the highest RSI(6) when position is short(0) and there are multiple stand next to each other.
+        # TODO: Write a function to calculate the lowest RSI(6) when position is long(1) and there are multiple stand next to each other.
 
         if output:
             resolved_output = file.resolve(output)
