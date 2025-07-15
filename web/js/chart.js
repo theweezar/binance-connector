@@ -49,7 +49,7 @@ function createMarkers(data) {
             position: isLong ? 'belowBar' : 'aboveBar',
             color: isLong ? 'green' : 'red',
             shape: isLong ? 'arrowUp' : 'arrowDown',
-            text: `RSI(6): ${parseFixed(row.rsi_6, 2)}\nRSI_H(6): ${parseFixed(row.rsi_6_of_high, 2)}\nRSI_L(6): ${parseFixed(row.rsi_6_of_low, 2)}`,
+            text: isLong ? 'B' : 'S',
         };
     }).filter(marker => marker !== null);
 }
@@ -67,7 +67,7 @@ function parseFixed(value, fixed) {
 
 function createTooltip() {
     const toolTip = document.createElement('div');
-    toolTip.style = `width: 120px; height: 120px; position: absolute; display: none; padding: 8px; box-sizing: border-box; font-size: 12px; text-align: left; z-index: 1000; top: 12px; left: 12px; pointer-events: none; border: 1px solid; border-radius: 2px;font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;`;
+    toolTip.style = `width: auto; height: auto; position: absolute; display: none; padding: 8px; box-sizing: border-box; font-size: 10px; text-align: left; z-index: 1000; top: 12px; left: 12px; pointer-events: none; border: 1px solid; border-radius: 1px;`;
     toolTip.style.background = 'white';
     toolTip.style.color = 'black';
     toolTip.style.borderColor = 'rgba( 38, 166, 154, 1)';
@@ -93,6 +93,10 @@ function createChartElement(series, markers, rawMapping) {
                 type: 'solid',
                 color: 'white'
             }
+        },
+        grid: {
+            vertLines: { color: "transparent" },
+            horzLines: { color: "transparent" },
         },
         localization: {
             priceFormatter: price => {
@@ -136,14 +140,26 @@ function createChartElement(series, markers, rawMapping) {
             const rawData = rawMapping[time] || {};
 
             toolTip.innerHTML = `
-            <div style="font-size: 24px; margin: 4px 0px; color: ${'black'}">
+            <div style="font-size: 16px; margin: 4px 0px; color: ${'black'}">
             ${price}
             </div>
             <div style="color: ${'black'}">
-            ${dateStr}
+            Time: ${dateStr}
             </div>
             <div style="color: ${'black'}">
-            RSI(6): ${parseFixed(rawData.rsi_6, 2)}
+            High: ${data.high}
+            </div>
+            <div style="color: ${'black'}">
+            Low: ${data.low}
+            </div>
+            <div style="color: ${'black'}">
+            RSI (6): ${parseFixed(rawData.rsi_6, 2)}
+            </div>
+            <div style="color: ${'black'}">
+            RSI of high (6): ${parseFixed(rawData.rsi_6_of_high, 2)}
+            </div>
+            <div style="color: ${'black'}">
+            RSI of low (6): ${parseFixed(rawData.rsi_6_of_low, 2)}
             </div>
             `;
 
