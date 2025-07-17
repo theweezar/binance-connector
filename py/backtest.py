@@ -119,7 +119,7 @@ class Back_Test_CLI:
     """
 
     def compute(
-        self, source: str, plot: str = None, output: str = None, tail: int = 1000
+        self, source: str, plot: str = None, output: str = None, tail: int = 1000, filter: str = None
     ):
         """
         Perform backtest, export, and plot results.
@@ -129,6 +129,7 @@ class Back_Test_CLI:
             plot (str): If "true", plot the last N rows.
             output (str): Path to export the last 1000 rows as CSV.
             tail (int): Number of rows to plot from the end of the DataFrame.
+            filter (str): Filter to apply on the DataFrame.
         """
         # Load data
         src = file.get_source(source)
@@ -137,12 +138,12 @@ class Back_Test_CLI:
         # Set position column based on RSI conditions
         df["position"] = "-"
 
-        # Long condition: rsi_6_of_low < 27 and rsi_9_of_low < 30
+        # Long condition
         long_mask = (df["rsi_6_of_low"] < 27) #& (df["rsi_9_of_low"] < 30)
         df.loc[long_mask, "position"] = 1  # Long
 
-        # Short condition: rsi_6_of_high > 90 and rsi_9_of_high > 89
-        short_mask = (df["rsi_6_of_high"] > 90) #& (df["rsi_9_of_high"] > 89)
+        # Short condition
+        short_mask = (df["rsi_6_of_high"] > 88) #& (df["rsi_9_of_high"] > 89)
         df.loc[short_mask, "position"] = 0  # Short
 
         # Plot last N rows
@@ -153,10 +154,9 @@ class Back_Test_CLI:
 
         # TODO: Write a function to calculate profit/loss based on positions.
 
-        # TODO: Write a function to calculate the highest RSI(6) when position is short(0) and there are multiple stand next to each other.
-        plot_df = select_short_position_maximum_of(plot_df, "rsi_6_of_high", steps=6)
-        # TODO: Write a function to calculate the lowest RSI(6) when position is long(1) and there are multiple stand next to each other.
-        plot_df = select_long_position_minimum_of(plot_df, "rsi_6_of_low", steps=6)
+        if filter == "select-max-min":
+            plot_df = select_short_position_maximum_of(plot_df, "rsi_6_of_high", steps=6)
+            plot_df = select_long_position_minimum_of(plot_df, "rsi_6_of_low", steps=6)
 
         if output:
             resolved_output = file.resolve(output)

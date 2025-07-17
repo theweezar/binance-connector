@@ -1,6 +1,6 @@
 'use strict';
 
-import { createChart, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts';
+import { createChart, CandlestickSeries, createSeriesMarkers, LineSeries } from 'lightweight-charts';
 import Papa from 'papaparse';
 import moment from 'moment';
 
@@ -18,6 +18,21 @@ function createLineSeries(data) {
             low: Number(row.low),
             close: Number(row.close),
             raw: row
+        };
+    });
+}
+
+/**
+ * Create a value series from the data.
+ * @param {Array<Object>} data - Array of row objects from CSV.
+ * @param {string} column - The column name to extract values from.
+ * @returns {Array<Object>} Array of objects with time and value properties.
+ */
+function createValueSeries(data, column) {
+    return data.map(row => {
+        return {
+            time: (new Date(row.start)).getTime(),
+            value: Number(row[column])
         };
     });
 }
@@ -80,11 +95,16 @@ function createTooltip() {
  * @param {Array<Object>} markers - Marker objects for positions.
  * @param {Object} rawMapping - Mapping of time to raw data.
  */
-function createChartElement(series, markers, rawMapping) {
+function createChartElement(data) {
+    const series = createLineSeries(data);
+    const markers = createMarkers(data);
+    const rawMapping = createRawMappingByTime(series);
+    const ma20 = createValueSeries(data, 'ma_20');
+    const ma50 = createValueSeries(data, 'ma_50');
 
-    console.log('Loading series:', series);
-    console.log('Loading markers:', markers);
-    console.log('Loading rawMapping:', rawMapping);
+    // console.log('Loading series:', series);
+    // console.log('Loading markers:', markers);
+    // console.log('Loading rawMapping:', rawMapping);
 
     const chartOptions = {
         layout: {
@@ -113,11 +133,11 @@ function createChartElement(series, markers, rawMapping) {
         wickUpColor: '#26a69a',
         wickDownColor: '#ef5350'
     });
-    const toolTip = createTooltip();
-    chartContainer.appendChild(toolTip);
-
     candlestickSeries.setData(series);
     createSeriesMarkers(candlestickSeries, markers);
+
+    const toolTip = createTooltip();
+    chartContainer.appendChild(toolTip);
 
     chart.subscribeCrosshairMove(param => {
         if (
@@ -140,25 +160,25 @@ function createChartElement(series, markers, rawMapping) {
             const rawData = rawMapping[time] || {};
 
             toolTip.innerHTML = `
-            <div style="font-size: 16px; margin: 4px 0px; color: ${'black'}">
+            <div style="font-size: 16px; margin-bottom: 4px; color: ${'black'}">
             ${price}
             </div>
-            <div style="color: ${'black'}">
+            <div style="margin-bottom: 2px;color: ${'black'}">
             Time: ${dateStr}
             </div>
-            <div style="color: ${'black'}">
+            <div style="margin-bottom: 2px;color: ${'black'}">
             High: ${data.high}
             </div>
-            <div style="color: ${'black'}">
+            <div style="margin-bottom: 2px;color: ${'black'}">
             Low: ${data.low}
             </div>
-            <div style="color: ${'black'}">
+            <div style="margin-bottom: 2px;color: ${'black'}">
             RSI (6): ${parseFixed(rawData.rsi_6, 2)}
             </div>
-            <div style="color: ${'black'}">
+            <div style="margin-bottom: 2px;color: ${'black'}">
             RSI of high (6): ${parseFixed(rawData.rsi_6_of_high, 2)}
             </div>
-            <div style="color: ${'black'}">
+            <div style="margin-bottom: 2px;color: ${'black'}">
             RSI of low (6): ${parseFixed(rawData.rsi_6_of_low, 2)}
             </div>
             `;
@@ -179,6 +199,11 @@ function createChartElement(series, markers, rawMapping) {
         }
     });
 
+    const ma20LineSeries = chart.addSeries(LineSeries, { color: '#39e75f' });
+    ma20LineSeries.setData(ma20);
+    const ma50LineSeries = chart.addSeries(LineSeries, { color: '#f9c74f' });
+    ma50LineSeries.setData(ma50);
+
     chart.timeScale().fitContent();
 }
 
@@ -188,10 +213,7 @@ function createChartElement(series, markers, rawMapping) {
  */
 function papaComplete(results) {
     const data = results.data;
-    const lineSeries = createLineSeries(data);
-    const markers = createMarkers(data);
-    const rawMapping = createRawMappingByTime(lineSeries);
-    createChartElement(lineSeries, markers, rawMapping);
+    createChartElement(data);
 }
 
 /**
@@ -207,7 +229,17 @@ function papaComplete(results) {
     //     });
     // });
 
-    Papa.parse('http://127.0.0.1:5500/web/dist/file/XLMUSDT_1h_backtest.csv', {
+    const host = 'http://127.0.0.1:5500/web/dist/file';
+    const url = new URL(location.href);
+    const searchParams = url.searchParams;
+    const source = searchParams.get('source');
+    const chartTitle = document.getElementById('chart-title');
+
+    if (!source) return;
+
+    chartTitle.textContent = `Backtest Chart: ${source}`;
+
+    Papa.parse(`${host}/${source}`, {
         download: true,
         complete: papaComplete,
         header: true,

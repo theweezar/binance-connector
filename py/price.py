@@ -101,8 +101,10 @@ class Price_CLI:
         client = Spot()
 
         if merge == "true":
-            self.fetch_and_merge(client, symbol, interval, path)
-            return
+            resolved_path = file.resolve(path)
+            if os.path.exists(resolved_path):
+                self.fetch_and_merge(client, symbol, interval, path)
+                return
 
         if chunk is not None:
             self.fetch_by_chunk(client, symbol, interval, path, chunk)
@@ -128,8 +130,6 @@ class Price_CLI:
         """
         limit = self.limit
         resolved_path = file.resolve(path)
-        if not os.path.exists(resolved_path):
-            return  # No file, nothing to merge, fallback to normal fetch
         with open(resolved_path, "r", newline="") as csvfile:
             reader = csv.DictReader(csvfile)
             rows = list(reader)
