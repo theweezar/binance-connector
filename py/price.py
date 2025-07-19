@@ -6,6 +6,80 @@ import csv
 import datetime
 from util import file
 from binance.spot import Spot
+from termcolor import colored
+
+
+def calc_stoploss(price: float, stoploss: float):
+    """Calculate the stop loss price."""
+    return price * (1 - stoploss)
+
+
+def calc_takeprofit(price: float, takeprofit: float):
+    """Calculate the take profit price."""
+    return price * (1 + takeprofit)
+
+
+def calc_pnl(entry_price: float, exit_price: float, quantity: float):
+    """
+    Calculate profit/loss based on entry and exit prices and quantity.
+
+    Args:
+        entry_price (float): Entry price of the position.
+        exit_price (float): Exit price of the position.
+        quantity (float): Quantity of the asset.
+
+    Returns:
+        float: Profit or loss amount.
+    """
+    return (exit_price - entry_price) * quantity
+
+
+def calculate_futures_exit_price_full_fund(
+    entry_price: float,
+    available_fund: float,
+    leverage: float,
+    target_pnl_percent: float,
+    position: str = "long",
+):
+    """
+    Calculate futures exit price using full available fund, leverage, and target PnL %.
+
+    Parameters:
+    - entry_price (float): The entry price.
+    - available_fund (float): The initial available capital (wallet balance).
+    - leverage (float): Leverage multiplier.
+    - target_pnl_percent (float): Desired profit in % of margin used.
+    - position (str): "long" or "short"
+
+    Returns:
+    - exit_price (float): The target exit price to achieve the desired PnL.
+    - target_pnl_usd (float): The target profit in USD.
+    """
+
+    # Calculate notional size of the position
+    notional = available_fund * leverage
+
+    # Calculate quantity (contracts or units of the asset)
+    quantity = notional / entry_price
+
+    # Margin used (in this case, it's the full available fund)
+    margin_used = available_fund
+
+    # Target PnL in USD
+    target_pnl_usd = (target_pnl_percent / 100) * margin_used
+
+    # Price difference needed to reach target PnL
+    price_diff = target_pnl_usd / quantity
+
+    # Determine exit price based on position
+    if position.lower() == "long":
+        exit_price = entry_price + price_diff
+    elif position.lower() == "short":
+        exit_price = entry_price - price_diff
+    else:
+        raise ValueError("Position must be 'long' or 'short'")
+
+    return (round(exit_price, 6), round(target_pnl_usd, 2))
 
 
 class Price_CLI:
@@ -18,6 +92,38 @@ class Price_CLI:
     """
 
     limit = 500
+
+    def calc_exit_futures(
+        self,
+        entry_price: float,
+        percent_pnl: float,
+        available_fund: float,
+        leverage: float,
+    ):
+        """
+        Calculate the exit price when the profit/loss reaches a target value.
+        Command: python py/price.py calc_exit_futures --entry_price=3.3830 --percent_pnl=10 --available_fund=50 --leverage=7
+
+        Args:
+            entry_price (float): Entry price of the position.
+            percent_pnl (float): Target profit or loss amount percent.
+            available_fund (float): The initial available capital (wallet balance).
+            leverage (float): Leverage multiplier.
+        """
+
+        exit_price, target_pnl_usd = calculate_futures_exit_price_full_fund(
+            entry_price,
+            available_fund,
+            leverage,
+            percent_pnl
+        )
+
+        print(
+            colored(
+                f"Exit price to achieve {percent_pnl}% PnL: {exit_price} (Target PnL: {target_pnl_usd} USD)",
+                "green" if percent_pnl > 0 else "red"
+            )
+        )
 
     def calc_end_time_from_to(self, interval: str, from_: str, to: str):
         """

@@ -21,3 +21,12 @@ update code:
 - update RSI conditions:
     - when long: `df["rsi_6_of_low"] < 27 and df["rsi_9_of_low"] < 30`.
     - when short: `df["rsi_6_of_high"] > 90 and df["rsi_9_of_high"] > 89`.
+
+---
+
+Update UI in this PHP script:
+- Divide the page into 2 columns with ratio 4:8
+- First column does 2 things:
+    - load all files in folder URL localhost/web/dist/.
+    - show all files in tree view.
+- Second column will show the chart UI. Keep the current chart HTML.

@@ -139,11 +139,11 @@ class Back_Test_CLI:
         df["position"] = "-"
 
         # Long condition
-        long_mask = (df["rsi_6_of_low"] < 27) #& (df["rsi_9_of_low"] < 30)
+        long_mask = (df["rsi_6_of_low"] < 31) #& (df["rsi_9_of_low"] < 30)
         df.loc[long_mask, "position"] = 1  # Long
 
         # Short condition
-        short_mask = (df["rsi_6_of_high"] > 88) #& (df["rsi_9_of_high"] > 89)
+        short_mask = (df["rsi_6_of_high"] > 80) #& (df["rsi_9_of_high"] > 89)
         df.loc[short_mask, "position"] = 0  # Short
 
         # Plot last N rows
