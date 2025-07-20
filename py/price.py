@@ -210,14 +210,17 @@ class Price_CLI:
             resolved_path = file.resolve(path)
             if os.path.exists(resolved_path):
                 self.fetch_and_merge(client, symbol, interval, path)
+                print(f"Successfully fetched {symbol}_{interval}")
                 return
 
         if chunk is not None:
             self.fetch_by_chunk(client, symbol, interval, path, chunk)
+            print(f"Successfully fetched {symbol}_{interval}")
             return
 
         if from_ and to:
             self.fetch_by_from_to(client, symbol, interval, path, from_, to)
+            print(f"Successfully fetched {symbol}_{interval}")
             return
 
         raise ValueError(

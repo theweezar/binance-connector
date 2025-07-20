@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "npx webpack --config webpack.config.js",
-    "fetch:xrp": "bash ./sh/xrp.sh"
+    "fetch:xrp": "bash ./sh/xrp.sh",
+    "backtest:xrp": "bash ./sh/backtest.sh XRPUSDT 15m"
   },
   "author": "DucHoang",
   "license": "ISC",
@@ -16,6 +17,7 @@
     "@babel/preset-env": "^7.28.0",
     "autoprefixer": "^10.4.21",
     "babel-loader": "^10.0.0",
+    "bootstrap": "^5.3.7",
     "commander": "^14.0.0",
     "cron": "^4.3.2",
     "css-loader": "^7.1.2",
@@ -27,8 +29,10 @@
     "moment": "^2.30.1",
     "papaparse": "^5.5.3",
     "postcss-loader": "^8.1.1",
+    "sass": "^1.89.2",
     "sass-loader": "^16.0.5",
     "shelljs": "^0.10.0",
+    "style-loader": "^4.0.0",
     "webpack": "^5.100.1",
     "webpack-cli": "^6.0.1"
   }

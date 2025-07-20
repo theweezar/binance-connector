@@ -3,6 +3,7 @@
 import { createChart, CandlestickSeries, createSeriesMarkers, LineSeries } from 'lightweight-charts';
 import Papa from 'papaparse';
 import moment from 'moment';
+import '../scss/bootstrap.scss';
 
 /**
  * Process CSV data to generate candlestick series, markers, and MA lines.
@@ -86,6 +87,12 @@ function createTooltip() {
     return toolTip;
 }
 
+function createTooltipLine(label, value) {
+    return `<div style="margin-bottom: 2px;color: black">
+            <span style="font-weight: bold;">${label}:</span> ${value}
+        </div>`;
+}
+
 /**
  * Render the chart with candlestick series and markers.
  * @param {Array<Object>} series - Candlestick series data.
@@ -162,28 +169,20 @@ function createChartElement(data) {
             const time = Number(param.time);
             const rawData = rawMapping[time] || {};
 
+            const toolTipLines = [
+                createTooltipLine('Time', dateStr),
+                createTooltipLine('High', data.high),
+                createTooltipLine('Low', data.low),
+                createTooltipLine('RSI (6)', parseFixed(rawData.rsi_6, 2)),
+                createTooltipLine('RSI of high (6)', parseFixed(rawData.rsi_6_of_high, 2)),
+                createTooltipLine('RSI of low (6)', parseFixed(rawData.rsi_6_of_low, 2))
+            ];
+
             toolTip.innerHTML = `
             <div style="font-size: 16px; margin-bottom: 4px; color: ${'black'}">
             ${price}
             </div>
-            <div style="margin-bottom: 2px;color: ${'black'}">
-            Time: ${dateStr}
-            </div>
-            <div style="margin-bottom: 2px;color: ${'black'}">
-            High: ${data.high}
-            </div>
-            <div style="margin-bottom: 2px;color: ${'black'}">
-            Low: ${data.low}
-            </div>
-            <div style="margin-bottom: 2px;color: ${'black'}">
-            RSI (6): ${parseFixed(rawData.rsi_6, 2)}
-            </div>
-            <div style="margin-bottom: 2px;color: ${'black'}">
-            RSI of high (6): ${parseFixed(rawData.rsi_6_of_high, 2)}
-            </div>
-            <div style="margin-bottom: 2px;color: ${'black'}">
-            RSI of low (6): ${parseFixed(rawData.rsi_6_of_low, 2)}
-            </div>
+            ${toolTipLines.join('')}
             `;
 
             toolTip.style.display = 'block';
@@ -242,7 +241,7 @@ function papaComplete(results) {
 
     if (!source) return;
 
-    chartTitle.textContent = `Backtest Chart: ${source}`;
+    chartTitle.textContent = `${source}`;
 
     const csvPath = `${origin}/${path}/${source}`;
     console.log('Loading CSV from:', csvPath);
