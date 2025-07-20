@@ -11863,7 +11863,7 @@ body {
 }
 
 .main-content {
-  height: 100vh;
+  height: calc(100vh - 1rem);
 }
 
 #chart-container {

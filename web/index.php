@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lightweight Charts Customization Tutorial</title>
 
-    <script defer src="./dist/resources/main.js"></script>
-    <link rel="stylesheet" href="./dist/resources/main.css">
+    <script defer src="./dist/resources/bootstrap.js"></script>
+    <script defer src="./dist/resources/chart.js"></script>
+    <link rel="stylesheet" href="./dist/resources/chart.css">
 </head>
 
 <body class="bg-light main-content">
@@ -76,8 +77,11 @@
                         </h5>
                         <div class="ms-auto">
                             <a
-                                href="fetch.php?symbol=<?= htmlspecialchars($symbol) ?>&interval=<?= htmlspecialchars($interval) ?>"
-                                class="btn btn-primary btn-sm">Fetch</a>
+                                id="fetch-button"
+                                href="/fetch.php?symbol=<?= htmlspecialchars($symbol) ?>&interval=<?= htmlspecialchars($interval) ?>"
+                                class="btn btn-primary btn-sm text-center">
+                                <span class="text">Fetch</span>
+                            </a>
                         </div>
                     </div>
                     <div class="card-body">

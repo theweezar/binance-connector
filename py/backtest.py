@@ -139,7 +139,7 @@ class Back_Test_CLI:
         df["position"] = "-"
 
         # Long condition
-        long_mask = (df["rsi_6_of_low"] < 31) #& (df["rsi_9_of_low"] < 30)
+        long_mask = (df["rsi_6_of_low"] < 27) #& (df["rsi_9_of_low"] < 30)
         df.loc[long_mask, "position"] = 1  # Long
 
         # Short condition
@@ -152,6 +152,7 @@ class Back_Test_CLI:
 
         print(f"Found {len(count_position)} positions in the last {tail} rows.")
 
+        # TODO: Write a function to combine RSI and ADX to generate signal.
         # TODO: Write a function to calculate profit/loss based on positions.
 
         if filter == "select-max-min":
@@ -163,6 +164,7 @@ class Back_Test_CLI:
             with open(resolved_output, "w") as f:
                 f.write(plot_df.to_csv(index_label="index", lineterminator="\n"))
                 print(f"Exported last {tail} rows to {resolved_output}")
+                print(f"Successfully processed backtest for {source}")
 
         if plot == "true":
             start_plot(plot_df)

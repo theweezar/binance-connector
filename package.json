@@ -5,14 +5,23 @@
   "main": "index.js",
   "scripts": {
     "build": "npx webpack --config webpack.config.js",
-    "fetch:xrp": "bash ./sh/xrp.sh",
-    "backtest:xrp": "bash ./sh/backtest.sh XRPUSDT 15m"
+    "rsi:reverse": "bash ./sh/rsi-reverse.sh EPICUSDT 15m",
+    "backtest:xrp": "bash ./sh/backtest.sh XRPUSDT 15m",
+    "backtest:btc": "bash ./sh/backtest.sh BTCUSDT 15m",
+    "backtest:xlm": "bash ./sh/backtest.sh XLMUSDT 15m",
+    "backtest:eth": "bash ./sh/backtest.sh ETHUSDT 15m",
+    "backtest:ltc": "bash ./sh/backtest.sh LTCUSDT 15m",
+    "backtest:epic": "bash ./sh/backtest.sh EPICUSDT 15m",
+    "backtest:kaito": "bash ./sh/backtest.sh KAITOUSDT 15m",
+    "backtest:wif": "bash ./sh/backtest.sh WIFUSDT 15m"
   },
   "author": "DucHoang",
   "license": "ISC",
   "dependencies": {
     "@babel/core": "^7.28.0",
     "@babel/plugin-proposal-optional-chaining": "^7.21.0",
+    "@babel/plugin-syntax-optional-chaining": "^7.8.3",
+    "@babel/plugin-transform-optional-chaining": "^7.27.1",
     "@babel/plugin-transform-runtime": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "autoprefixer": "^10.4.21",

@@ -4,13 +4,27 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const path = require('path');
 const cwd = process.cwd();
 
+/**
+ * Create entry points for webpack
+ * @returns {Object} Object with entry points for webpack
+ */
+const creatEntries = () => {
+    const entries = [
+        path.join(cwd, 'web/js/chart.js'),
+        path.join(cwd, 'web/js/bootstrap.js')
+    ]
+    const obj = {};
+    entries.forEach((entry) => {
+        const name = path.basename(entry, path.extname(entry));
+        obj[name] = entry;
+    });
+    return obj;
+}
+
 module.exports = [
     {
         mode: 'development',
-        entry: [
-            path.join(cwd, 'web/js/chart.js'),
-            path.join(cwd, 'web/js/bootstrap.js')
-        ],
+        entry: creatEntries(),
         output: {
             path: path.join(cwd, 'web/dist/resources'),
             filename: '[name].js'

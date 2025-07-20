@@ -16,7 +16,10 @@ function processChartData(data) {
     const ma20 = [];
     const ma50 = [];
     data.forEach(row => {
-        const time = (new Date(row.start)).getTime();
+        const date = new Date(row.start);
+        // UTC+7
+        date.setHours(date.getHours() + 7);
+        const time = date.getTime();
         // Candlestick series
         series.push({
             time,
@@ -80,17 +83,37 @@ function parseFixed(value, fixed) {
  */
 function createTooltip() {
     const toolTip = document.createElement('div');
-    toolTip.style = `width: auto; height: auto; position: absolute; display: none; padding: 8px; box-sizing: border-box; font-size: 10px; text-align: left; z-index: 1000; top: 12px; left: 12px; pointer-events: none; border: 1px solid; border-radius: 1px;`;
+    toolTip.style = `width: auto; height: auto; position: absolute; display: none; padding: 8px; box-sizing: border-box; font-size: 11px; text-align: left; z-index: 1000; top: 12px; left: 12px; pointer-events: none; border: 1px solid; border-radius: 1px;`;
     toolTip.style.background = 'white';
     toolTip.style.color = 'black';
     toolTip.style.borderColor = 'rgba( 38, 166, 154, 1)';
     return toolTip;
 }
 
-function createTooltipLine(label, value) {
-    return `<div style="margin-bottom: 2px;color: black">
+function createTooltipLine(label, value, color = 'black') {
+    return `<div style="margin-bottom: 2px;color: ${color}">
             <span style="font-weight: bold;">${label}:</span> ${value}
         </div>`;
+}
+
+/**
+ * Return Fraction Digits based on source file
+ * @returns {number} - Fraction Digits number
+ */
+function getFractionDigits() {
+    if (window.source) {
+        let sourceSplit = window.source.split('_');
+        let symbol = String(sourceSplit[0]).toUpperCase();
+        let config = {
+            BTCUSDT: 2,
+            ETHUSDT: 2,
+            XRPUSDT: 2,
+            XLMUSDT: 4,
+            KAITOCUSDT: 3
+        };
+        return config[symbol] || 0;
+    }
+    return 0;
 }
 
 /**
@@ -102,7 +125,7 @@ function createTooltipLine(label, value) {
 function createChartElement(data) {
     const { series, markers, ma20, ma50 } = processChartData(data);
     const rawMapping = createRawMappingByTime(series);
-    const fractionDigits = 4;
+    const fractionDigits = getFractionDigits();
     const visibleRange = {
         from: data.length - 100,
         to: data.length - 1
@@ -174,8 +197,8 @@ function createChartElement(data) {
                 createTooltipLine('High', data.high),
                 createTooltipLine('Low', data.low),
                 createTooltipLine('RSI (6)', parseFixed(rawData.rsi_6, 2)),
-                createTooltipLine('RSI of high (6)', parseFixed(rawData.rsi_6_of_high, 2)),
-                createTooltipLine('RSI of low (6)', parseFixed(rawData.rsi_6_of_low, 2))
+                createTooltipLine('RSI high (6)', parseFixed(rawData.rsi_6_of_high, 2), 'red'),
+                createTooltipLine('RSI low (6)', parseFixed(rawData.rsi_6_of_low, 2), 'green')
             ];
 
             toolTip.innerHTML = `
@@ -197,7 +220,7 @@ function createChartElement(data) {
                 top = y - toolTipHeight - toolTipMargin;
             }
             toolTip.style.left = left + 'px';
-            toolTip.style.top = top + 'px';
+            toolTip.style.top = '1rem';
         }
     });
 
@@ -219,37 +242,76 @@ function papaComplete(results) {
     createChartElement(data);
 }
 
+function parseOnFileInput() {
+    document.getElementById('fileInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        Papa.parse(file, {
+            complete: papaComplete,
+            header: true,
+            skipEmptyLines: true,
+        });
+    });
+}
+
+/**
+ * Initialize parsing on page load if a source parameter is present in the URL.
+ */
+function initParseOnLoad() {
+    const url = new URL(location.href);
+    const path = 'dist/file';
+    const origin = location.origin;
+    const source = url.searchParams.get('source');
+    const chartTitle = document.getElementById('chart-title');
+    const csvPath = `${origin}/${path}/${source}`;
+
+    if (source) {
+        window.source = source;
+        chartTitle.textContent = `${source}`;
+        console.log('Loading CSV from:', csvPath);
+        Papa.parse(csvPath, {
+            download: true,
+            complete: papaComplete,
+            header: true,
+            skipEmptyLines: true,
+        });
+    }
+}
+
+async function startFetch(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Fetch error:', error);
+    }
+}
+
+function initFetchHandler() {
+    document.getElementById('fetch-button').addEventListener('click', function (e) {
+        e.preventDefault();
+        this.disabled = true;
+        this.classList.add('disabled');
+        startFetch(this.href).then(data => {
+            if (data && data.success === true) {
+                window.location.reload();
+            } else {
+                this.disabled = false;
+                this.classList.remove('disabled');
+            }
+        }).catch(error => {
+            this.disabled = false;
+        });
+    });
+}
+
 /**
  * Initialize file input event and CSV parsing.
  */
 (function () {
-    // document.getElementById('fileInput').addEventListener('change', function (e) {
-    //     const file = e.target.files[0];
-    //     Papa.parse(file, {
-    //         complete: papaComplete,
-    //         header: true,
-    //         skipEmptyLines: true,
-    //     });
-    // });
-
-    const url = new URL(location.href);
-    const path = 'dist/file';
-    const origin = location.origin;
-    const searchParams = url.searchParams;
-    const source = searchParams.get('source');
-    const chartTitle = document.getElementById('chart-title');
-
-    if (!source) return;
-
-    chartTitle.textContent = `${source}`;
-
-    const csvPath = `${origin}/${path}/${source}`;
-    console.log('Loading CSV from:', csvPath);
-
-    Papa.parse(csvPath, {
-        download: true,
-        complete: papaComplete,
-        header: true,
-        skipEmptyLines: true,
-    })
+    initParseOnLoad();
+    initFetchHandler();
 })();
