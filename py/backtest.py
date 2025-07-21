@@ -2,6 +2,7 @@ import fire
 import pandas as pd
 import matplotlib.pyplot as plt
 from util import file
+from datetime import datetime, timezone
 
 
 def select_short_position_maximum_of(
@@ -119,7 +120,12 @@ class Back_Test_CLI:
     """
 
     def compute(
-        self, source: str, plot: str = None, output: str = None, tail: int = 1000, filter: str = None
+        self,
+        source: str,
+        plot: str = None,
+        output: str = None,
+        tail: int = 1000,
+        filter: str = None,
     ):
         """
         Perform backtest, export, and plot results.
@@ -139,11 +145,11 @@ class Back_Test_CLI:
         df["position"] = "-"
 
         # Long condition
-        long_mask = (df["rsi_6_of_low"] < 27) #& (df["rsi_9_of_low"] < 30)
+        long_mask = df["rsi_6_of_low"] < 20  # & (df["rsi_9_of_low"] < 30)
         df.loc[long_mask, "position"] = 1  # Long
 
         # Short condition
-        short_mask = (df["rsi_6_of_high"] > 80) #& (df["rsi_9_of_high"] > 89)
+        short_mask = df["rsi_6_of_high"] > 80  # & (df["rsi_9_of_high"] > 89)
         df.loc[short_mask, "position"] = 0  # Short
 
         # Plot last N rows
@@ -156,8 +162,15 @@ class Back_Test_CLI:
         # TODO: Write a function to calculate profit/loss based on positions.
 
         if filter == "select-max-min":
-            plot_df = select_short_position_maximum_of(plot_df, "rsi_6_of_high", steps=6)
+            plot_df = select_short_position_maximum_of(
+                plot_df, "rsi_6_of_high", steps=6
+            )
             plot_df = select_long_position_minimum_of(plot_df, "rsi_6_of_low", steps=6)
+
+        now_dt = datetime.now(timezone.utc)
+        now_str = now_dt.strftime("%Y-%m-%d")
+        count_position_today = count_position[count_position["date"] == now_str]
+        print(f"Found {len(count_position_today)} positions today.")
 
         if output:
             resolved_output = file.resolve(output)

@@ -1,6 +1,6 @@
 'use strict';
 
-import { createChart, CandlestickSeries, createSeriesMarkers, LineSeries } from 'lightweight-charts';
+import { createChart, CandlestickSeries, createSeriesMarkers, LineSeries, CrosshairMode } from 'lightweight-charts';
 import Papa from 'papaparse';
 import moment from 'moment';
 import '../scss/bootstrap.scss';
@@ -15,6 +15,7 @@ function processChartData(data) {
     const markers = [];
     const ma20 = [];
     const ma50 = [];
+    const rawMapping = {};
     data.forEach(row => {
         const date = new Date(row.start);
         // UTC+7
@@ -35,7 +36,7 @@ function processChartData(data) {
             markers.push({
                 time,
                 position: isLong ? 'belowBar' : 'aboveBar',
-                color: isLong ? 'green' : 'red',
+                color: isLong ? '#4AFA9A' : '#FF4976',
                 shape: isLong ? 'arrowUp' : 'arrowDown',
                 text: isLong ? 'B' : 'S',
             });
@@ -49,21 +50,9 @@ function processChartData(data) {
             time,
             value: Number(row.ma_50)
         });
+        rawMapping[time] = row;
     });
-    return { series, markers, ma20, ma50 };
-}
-
-/**
- * Create a mapping of raw data by time.
- * @param {Array<Object>} series - Candlestick series data.
- * @returns {Object} Mapping of time to raw data.
- */
-function createRawMappingByTime(series) {
-    const rawMapping = {};
-    series.forEach(bar => {
-        rawMapping[bar.time] = bar.raw;
-    });
-    return rawMapping;
+    return { series, markers, ma20, ma50, rawMapping };
 }
 
 /**
@@ -102,18 +91,18 @@ function createTooltipLine(label, value, color = 'black') {
  */
 function getFractionDigits() {
     if (window.source) {
-        let sourceSplit = window.source.split('_');
-        let symbol = String(sourceSplit[0]).toUpperCase();
-        let config = {
+        const sourceSplit = window.source.split('_');
+        const symbol = String(sourceSplit[0]).toUpperCase();
+        const config = {
             BTCUSDT: 2,
             ETHUSDT: 2,
             XRPUSDT: 2,
             XLMUSDT: 4,
             KAITOCUSDT: 3
         };
-        return config[symbol] || 0;
+        return config[symbol] || 2;
     }
-    return 0;
+    return 2;
 }
 
 /**
@@ -123,8 +112,7 @@ function getFractionDigits() {
  * @param {Object} rawMapping - Mapping of time to raw data.
  */
 function createChartElement(data) {
-    const { series, markers, ma20, ma50 } = processChartData(data);
-    const rawMapping = createRawMappingByTime(series);
+    const { series, markers, ma20, ma50, rawMapping } = processChartData(data);
     const fractionDigits = getFractionDigits();
     const visibleRange = {
         from: data.length - 100,
@@ -137,15 +125,15 @@ function createChartElement(data) {
 
     const chartOptions = {
         layout: {
-            textColor: 'black',
-            background: {
-                type: 'solid',
-                color: 'white'
-            }
+            background: { color: '#1e1e1e' },
+            textColor: '#D1D4DC',
         },
         grid: {
-            vertLines: { color: "transparent" },
-            horzLines: { color: "transparent" },
+            vertLines: { color: '#2B2B43' },
+            horzLines: { color: '#2B2B43' },
+        },
+        crosshair: {
+            mode: CrosshairMode.Normal,
         },
         localization: {
             priceFormatter: price => {
@@ -160,11 +148,12 @@ function createChartElement(data) {
     const chartContainer = document.getElementById('chart-container');
     const chart = createChart(chartContainer, chartOptions);
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderVisible: false,
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350'
+        upColor: '#4AFA9A',
+        downColor: '#FF4976',
+        borderUpColor: '#4AFA9A',
+        borderDownColor: '#FF4976',
+        wickUpColor: '#4AFA9A',
+        wickDownColor: '#FF4976',
     });
     candlestickSeries.setData(series);
     createSeriesMarkers(candlestickSeries, markers);

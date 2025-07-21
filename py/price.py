@@ -1,9 +1,8 @@
 import csv
-import datetime
 import os
 import fire
 import csv
-import datetime
+from datetime import datetime, timezone, timedelta
 from util import file
 from binance.spot import Spot
 from termcolor import colored
@@ -112,16 +111,13 @@ class Price_CLI:
         """
 
         exit_price, target_pnl_usd = calculate_futures_exit_price_full_fund(
-            entry_price,
-            available_fund,
-            leverage,
-            percent_pnl
+            entry_price, available_fund, leverage, percent_pnl
         )
 
         print(
             colored(
                 f"Exit price to achieve {percent_pnl}% PnL: {exit_price} (Target PnL: {target_pnl_usd} USD)",
-                "green" if percent_pnl > 0 else "red"
+                "green" if percent_pnl > 0 else "red",
             )
         )
 
@@ -143,7 +139,7 @@ class Price_CLI:
         def parse_date(dt_str):
             for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
                 try:
-                    return datetime.datetime.strptime(dt_str, fmt)
+                    return datetime.strptime(dt_str, fmt)
                 except Exception:
                     continue
             raise ValueError(
@@ -155,10 +151,8 @@ class Price_CLI:
         if from_dt > to_dt:
             raise ValueError('"from_" date must be before or equal to "to" date.')
 
-        start_time = int(
-            from_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
-        )
-        end_time = int(to_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        start_time = int(from_dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
+        end_time = int(to_dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
         total_ms = end_time - start_time
         interval_map = {
             "1m": 60 * 1000,
@@ -246,7 +240,7 @@ class Price_CLI:
             return  # No data, nothing to merge, fallback to normal fetch
         last_row = rows[-1]
         last_start_str = last_row["start"]
-        now_dt = datetime.datetime.now(datetime.timezone.utc)
+        now_dt = datetime.now(timezone.utc)
         now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
         candle_ms, est_candles, est_chunks, fetch_start, fetch_end = (
             self.calc_end_time_from_to(interval, last_start_str, now_str)
@@ -275,11 +269,9 @@ class Price_CLI:
             fetch_end = klines[0][0] - 1
 
         if new_klines:
-            last_start_dt = datetime.datetime.strptime(
-                last_start_str, "%Y-%m-%d %H:%M:%S"
-            )
+            last_start_dt = datetime.strptime(last_start_str, "%Y-%m-%d %H:%M:%S")
             last_start_time = int(
-                last_start_dt.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
+                last_start_dt.replace(tzinfo=timezone.utc).timestamp() * 1000
             )
             # Remove last row if it has the same start time as the first new kline
             dup_rows = [k for k in new_klines if k[0] == last_start_time]
@@ -313,7 +305,7 @@ class Price_CLI:
         """
         limit = self.limit
         all_klines = []
-        end_time = int(datetime.datetime.now().timestamp() * 1000)
+        end_time = int(datetime.now().timestamp() * 1000)
         print(
             f"Fetching {chunk} chunk(s) of {limit} candles each (up to {chunk * limit} candles)..."
         )
@@ -396,17 +388,14 @@ class Price_CLI:
         resolved_path = file.resolve(path)
         mode = "a" if append else "w"
         write_header = not append or not os.path.exists(resolved_path)
+        # vnt_tz = timezone(timedelta(hours=7, minutes=0))
         with open(resolved_path, mode, newline="") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=headers)
             if write_header:
                 writer.writeheader()
             for row in all_klines:
-                open_time = datetime.datetime.fromtimestamp(
-                    row[0] / 1000, tz=datetime.timezone.utc
-                )
-                close_time = datetime.datetime.fromtimestamp(
-                    row[6] / 1000, tz=datetime.timezone.utc
-                )
+                open_time = datetime.fromtimestamp(row[0] / 1000, tz=timezone.utc)
+                close_time = datetime.fromtimestamp(row[6] / 1000, tz=timezone.utc)
                 open_price = float(row[1])
                 high_price = float(row[2])
                 low_price = float(row[3])
