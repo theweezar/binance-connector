@@ -75,7 +75,7 @@ def add_macd(frame: pandas.DataFrame, column_name: str = "close"):
     return frame
 
 
-def add_adx(frame: pandas.DataFrame):
+def add_adx(frame: pandas.DataFrame, window: int = 14):
     """
     Add ADX (Average Directional Index) to the DataFrame.
 
@@ -85,10 +85,12 @@ def add_adx(frame: pandas.DataFrame):
     Returns:
         pandas.DataFrame: The DataFrame with the ADX added.
     """
-    adx = ta.trend.ADXIndicator(frame["high"], frame["low"], frame["close"])
-    frame["adx"] = adx.adx()
-    frame["+di"] = adx.adx_pos()
-    frame["-di"] = adx.adx_neg()
+    adx = ta.trend.ADXIndicator(
+        frame["high"], frame["low"], frame["close"], window=window
+    )
+    frame[f"adx_{window}"] = adx.adx()
+    frame[f"+di_{window}"] = adx.adx_pos()
+    frame[f"-di_{window}"] = adx.adx_neg()
     return frame
 
 
@@ -131,7 +133,8 @@ def apply(frame: pandas.DataFrame):
     # frame["ema_trend"] = ema_trend
 
     frame = add_macd(frame, "close")
-    frame = add_adx(frame)
+    frame = add_adx(frame, 6)
+    frame = add_adx(frame, 14)
 
     # Donchian Channel (20-period)
     frame["donchian_high"] = high.rolling(window=20).max()

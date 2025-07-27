@@ -45,12 +45,13 @@ function processChartData(data) {
         // Markers
         if (row.position !== '-' && row.position !== undefined && row.position !== null && row.position !== '') {
             let isLong = Number(row.position) === 1;
+            let price = isLong ? Number(row.low) : Number(row.high);
             seriesObject.marker.series.push({
                 time,
                 position: isLong ? 'belowBar' : 'aboveBar',
                 color: isLong ? '#4AFA9A' : '#FF4976',
                 shape: isLong ? 'arrowUp' : 'arrowDown',
-                text: isLong ? 'B' : 'S',
+                text: isLong ? `B: ${price}` : `S: ${price}`,
             });
         }
         // MA lines

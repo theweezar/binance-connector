@@ -1,0 +1,200 @@
+import pandas as pd
+import numpy as np
+
+
+def select_short_position_maximum_of(
+    df: pd.DataFrame, column_name: str, steps: int = 5
+):
+    """
+    For each rolling window of 'steps', keep only the short position (position==0)
+    with the maximum value in the specified column, set others to "-".
+
+    Args:
+        df (pd.DataFrame): Input DataFrame.
+        column_name (str): Column to find the maximum value for short positions.
+        steps (int): Size of the rolling window.
+
+    Returns:
+        pd.DataFrame: DataFrame with only the maximum short position kept per window.
+    """
+    cp_df = df.copy()
+
+    for i in range(0, len(cp_df) - steps + 1):
+        # Select group by steps
+        group_by_steps = cp_df[i : i + steps]
+        # Select short positions in group
+        group_has_short = group_by_steps[group_by_steps["position"] == 0]
+
+        if group_has_short.empty:
+            continue
+
+        max_value = group_has_short[column_name].max()
+        max_index = group_has_short[group_has_short[column_name] == max_value].index[0]
+        cp_df.loc[group_has_short.index, "position"] = "-"
+        cp_df.loc[max_index, "position"] = 0
+
+    return cp_df
+
+
+def select_long_position_minimum_of(df: pd.DataFrame, column_name: str, steps: int = 5):
+    """
+    For each rolling window of 'steps', keep only the long position (position==1)
+    with the minimum value in the specified column, set others to "-".
+
+    Args:
+        df (pd.DataFrame): Input DataFrame.
+        column_name (str): Column to find the minimum value for long positions.
+        steps (int): Size of the rolling window.
+
+    Returns:
+        pd.DataFrame: DataFrame with only the minimum long position kept per window.
+    """
+    cp_df = df.copy()
+
+    for i in range(0, len(cp_df) - steps + 1):
+        # Select group by steps
+        group_by_steps = cp_df[i : i + steps]
+        # Select long positions in group
+        group_has_long = group_by_steps[group_by_steps["position"] == 1]
+
+        if group_has_long.empty:
+            continue
+
+        min_value = group_has_long[column_name].min()
+        min_index = group_has_long[group_has_long[column_name] == min_value].index[0]
+        cp_df.loc[group_has_long.index, "position"] = "-"
+        cp_df.loc[min_index, "position"] = 1
+
+    return cp_df
+
+
+def apply_rsi_6(df: pd.DataFrame):
+    """
+    Apply RSI 6 conditions to the DataFrame to set trading positions.
+    Args:
+        df (pd.DataFrame): DataFrame containing market data with RSI columns.
+    Returns:
+        pd.DataFrame: DataFrame with a new 'position' column indicating trading signals.
+    """
+
+    long_mask = (df["rsi_6_low"] < 25) & (df["rsi_6_low"] > 4)
+    df.loc[long_mask, "position"] = 1
+
+    short_mask = (df["rsi_6_high"] > 75) & (df["rsi_6_high"] < 95)
+    df.loc[short_mask, "position"] = 0
+    return df
+
+
+def is_bullish_engulfing(row: pd.Series, prev_row: pd.Series) -> bool:
+    """
+    Check if the current row is a bullish engulfing pattern compared to the previous row.
+    Args:
+        row (pd.Series): Current row of the DataFrame.
+        prev_row (pd.Series): Previous row of the DataFrame.
+    Returns:
+        bool: True if the current row is a bullish engulfing pattern, False otherwise.
+    """
+    return (
+        prev_row["close"] < prev_row["open"]
+        and row["close"] > row["open"]
+        and row["close"] > prev_row["open"]
+        and row["open"] < prev_row["close"]
+    )
+
+
+def is_bearish_engulfing(row: pd.Series, prev_row: pd.Series) -> bool:
+    """
+    Check if the current row is a bearish engulfing pattern compared to the previous row.
+    Args:
+        row (pd.Series): Current row of the DataFrame.
+        prev_row (pd.Series): Previous row of the DataFrame.
+    Returns:
+        bool: True if the current row is a bearish engulfing pattern, False otherwise.
+    """
+    return (
+        prev_row["close"] > prev_row["open"]
+        and row["close"] < row["open"]
+        and row["open"] > prev_row["close"]
+        and row["close"] < prev_row["open"]
+    )
+
+
+def apply_engulfing(df: pd.DataFrame):
+    """
+    Generate trading signals based on EMA crossovers and engulfing patterns.
+    Args:
+        df (pd.DataFrame): DataFrame containing market data with EMA columns.
+    Returns:
+        pd.DataFrame: DataFrame with a new 'position' column indicating trading signals.
+    """
+
+    for i in range(1, len(df)):
+        prev = df.iloc[i - 1]
+        curr = df.iloc[i]
+        # Example: EMA crossover + bullish engulfing + RSI confirmation
+        bullish_cross = (
+            prev["ema_9"] < prev["ema_21"] and curr["ema_9"] > curr["ema_21"]
+        )
+        bearish_cross = (
+            prev["ema_9"] > prev["ema_21"] and curr["ema_9"] < curr["ema_21"]
+        )
+        bullish_engulf = is_bullish_engulfing(curr, prev)
+        bearish_engulf = is_bearish_engulfing(curr, prev)
+        # Long entry conditions
+        if bullish_cross and bullish_engulf:
+            df.at[df.index[i], "position"] = 1
+        # Short entry conditions
+        if bearish_cross and bearish_engulf:
+            df.at[df.index[i], "position"] = 0
+    return df
+
+
+def calc_trend_polyfit(df: pd.DataFrame, col: str, steps: int = 3):
+    """
+    Calculate the trend of a given column using polynomial fitting.
+    Args:
+        df (pd.DataFrame): DataFrame containing the data.
+        col (str): Column name to calculate the trend for.
+        steps (int): Number of steps to consider for the trend calculation.
+    Returns:
+        list: List of trend directions ("up", "down", "flat") for each step
+    """
+    trend = [None] * steps
+    series = df[col].values
+    for i in range(steps, len(series)):
+        y = series[(i - steps) : i + 1]
+        x = np.arange(steps + 1)
+        slope, intercept = np.polyfit(x, y, 1)
+        # You can adjust the threshold for "flat" trend if desired
+        if slope > 1e-6:
+            trend.append("up")
+        elif slope < -1e-6:
+            trend.append("down")
+        else:
+            trend.append("flat")
+    return trend
+
+
+def apply_rsi_adx_trends(df: pd.DataFrame, method: str = "polyfit"):
+    """
+    Apply RSI and ADX trends to the DataFrame to set trading positions.
+    Signal logic:
+    When RSI goes down and ADX goes up => price about to rise (long signal)
+    When RSI goes up and ADX goes down => price about to drop (short signal).
+    Args:
+        df (pd.DataFrame): DataFrame containing market data with RSI and ADX columns.
+        method (str): Method to calculate trends, e.g., "polyfit".
+    Returns:
+        pd.DataFrame: DataFrame with new columns for RSI and ADX trends.
+    """
+    if method == "polyfit":
+        df["rsi_trend"] = calc_trend_polyfit(df, "rsi_6", steps=6)
+        df["adx_trend"] = calc_trend_polyfit(df, "adx_6", steps=6)
+
+    long_mask = (df["rsi_trend"] == "down") & (df["adx_trend"] == "up")
+    short_mask = (df["rsi_trend"] == "up") & (df["adx_trend"] == "down")
+
+    df.loc[long_mask, "position"] = 1
+    df.loc[short_mask, "position"] = 0
+
+    return df

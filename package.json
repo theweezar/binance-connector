@@ -6,9 +6,9 @@
   "scripts": {
     "build": "npx webpack --config webpack.config.js",
     "rsi:reverse": "bash ./sh/rsi-reverse.sh EPICUSDT 15m",
-    "backtest:xrp": "bash ./sh/backtest.sh XRPUSDT 15m",
+    "backtest:xrp": "bash ./sh/backtest.sh XRPUSDT 5m",
     "backtest:btc": "bash ./sh/backtest.sh BTCUSDT 15m",
-    "backtest:xlm": "bash ./sh/backtest.sh XLMUSDT 5m",
+    "backtest:xlm": "bash ./sh/backtest.sh XLMUSDT 15m",
     "backtest:eth": "bash ./sh/backtest.sh ETHUSDT 15m",
     "backtest:ltc": "bash ./sh/backtest.sh LTCUSDT 15m",
     "backtest:epic": "bash ./sh/backtest.sh EPICUSDT 15m",
