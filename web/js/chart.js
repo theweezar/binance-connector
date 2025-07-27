@@ -3,26 +3,38 @@
 import { createChart, CandlestickSeries, createSeriesMarkers, LineSeries, CrosshairMode } from 'lightweight-charts';
 import Papa from 'papaparse';
 import moment from 'moment';
+import config from './config.js';
+import Line from './line.js';
 import '../scss/bootstrap.scss';
 
 /**
  * Process CSV data to generate candlestick series, markers, and MA lines.
  * @param {Array<Object>} data - Array of row objects from CSV.
- * @returns {Object} { series, markers, ma20, ma50 }
+ * @returns {Object} { series, markers, ma_20, ma_50 }
  */
 function processChartData(data) {
-    const series = [];
-    const markers = [];
-    const ma20 = [];
-    const ma50 = [];
-    const rawMapping = {};
+    const seriesObject = {
+        candle: {
+            series: [],
+        },
+        marker: {
+            series: [],
+        },
+        line: {},
+        rawMapping: {}
+    }
+
+    Object.keys(config.LineSeries).forEach(key => {
+        seriesObject.line[key] = [];
+    });
+
     data.forEach(row => {
         const date = new Date(row.start);
         // UTC+7
         date.setHours(date.getHours() + 7);
         const time = date.getTime();
         // Candlestick series
-        series.push({
+        seriesObject.candle.series.push({
             time,
             open: Number(row.open),
             high: Number(row.high),
@@ -33,7 +45,7 @@ function processChartData(data) {
         // Markers
         if (row.position !== '-' && row.position !== undefined && row.position !== null && row.position !== '') {
             let isLong = Number(row.position) === 1;
-            markers.push({
+            seriesObject.marker.series.push({
                 time,
                 position: isLong ? 'belowBar' : 'aboveBar',
                 color: isLong ? '#4AFA9A' : '#FF4976',
@@ -42,17 +54,19 @@ function processChartData(data) {
             });
         }
         // MA lines
-        ma20.push({
-            time,
-            value: Number(row.ma_20)
+        Object.keys(seriesObject.line).forEach(key => {
+            if (row[key] !== undefined && row[key] !== null && row[key] !== '' && row[key] !== '-') {
+                seriesObject.line[key].push({
+                    time,
+                    value: Number(row[key])
+                });
+            }
         });
-        ma50.push({
-            time,
-            value: Number(row.ma_50)
-        });
-        rawMapping[time] = row;
+
+        seriesObject.rawMapping[time] = row;
     });
-    return { series, markers, ma20, ma50, rawMapping };
+
+    return seriesObject;
 }
 
 /**
@@ -79,9 +93,16 @@ function createTooltip() {
     return toolTip;
 }
 
-function createTooltipLine(label, value, color = 'black') {
-    return `<div style="margin-bottom: 2px;color: ${color}">
-            <span style="font-weight: bold;">${label}:</span> ${value}
+/**
+ * Create a line for the tooltip with label and value.
+ * @param {string} label - The label for the line.
+ * @param {string} value - The value for the line.
+ * @param {string} color - The color for the line.
+ * @return {string} - HTML string for the tooltip line.
+ */
+function createTooltipLine(label, value, style) {
+    return `<div style="${style}">
+            <span style="font-weight: bold;">${label ? label + ':' : ''}</span> ${value}
         </div>`;
 }
 
@@ -112,17 +133,14 @@ function getFractionDigits() {
  * @param {Object} rawMapping - Mapping of time to raw data.
  */
 function createChartElement(data) {
-    const { series, markers, ma20, ma50, rawMapping } = processChartData(data);
+    const { candle, marker, line, rawMapping } = processChartData(data);
+
+    // Initialize chart options
     const fractionDigits = getFractionDigits();
     const visibleRange = {
         from: data.length - 100,
         to: data.length - 1
     };
-
-    console.log('Loading series:', series);
-    console.log('Loading markers:', markers);
-    console.log('Loading rawMapping:', rawMapping);
-
     const chartOptions = {
         layout: {
             background: { color: '#1e1e1e' },
@@ -145,19 +163,28 @@ function createChartElement(data) {
             secondsVisible: false
         }
     };
-    const chartContainer = document.getElementById('chart-container');
-    const chart = createChart(chartContainer, chartOptions);
-    const candlestickSeries = chart.addSeries(CandlestickSeries, {
+    const candlestickOptions = {
         upColor: '#4AFA9A',
         downColor: '#FF4976',
         borderUpColor: '#4AFA9A',
         borderDownColor: '#FF4976',
         wickUpColor: '#4AFA9A',
         wickDownColor: '#FF4976',
-    });
-    candlestickSeries.setData(series);
-    createSeriesMarkers(candlestickSeries, markers);
+    };
+    const defaultLineOptions = {
+        lineWidth: 2
+    };
 
+    // Create chart container and chart instance
+    const chartContainer = document.getElementById('chart-container');
+    const chart = createChart(chartContainer, chartOptions);
+    const candlestickSeries = chart.addSeries(CandlestickSeries, candlestickOptions);
+    candlestickSeries.setData(candle.series);
+
+    // Create markers for positions
+    createSeriesMarkers(candlestickSeries, marker.series);
+
+    // Create tooltip for displaying data
     const toolTip = createTooltip();
     chartContainer.appendChild(toolTip);
 
@@ -172,9 +199,6 @@ function createChartElement(data) {
         ) {
             toolTip.style.display = 'none';
         } else {
-            const toolTipWidth = 80;
-            const toolTipHeight = 80;
-            const toolTipMargin = 15;
             const data = param.seriesData.get(candlestickSeries);
             const price = data.value !== undefined ? data.value : data.close;
             const dateStr = moment(param.time).format('YYYY-MM-DD HH:mm:ss');
@@ -182,23 +206,21 @@ function createChartElement(data) {
             const rawData = rawMapping[time] || {};
 
             const toolTipLines = [
-                createTooltipLine('Time', dateStr),
-                createTooltipLine('High', data.high),
-                createTooltipLine('Low', data.low),
-                createTooltipLine('RSI (6)', parseFixed(rawData.rsi_6, 2)),
-                createTooltipLine('RSI high (6)', parseFixed(rawData.rsi_6_of_high, 2), 'red'),
-                createTooltipLine('RSI low (6)', parseFixed(rawData.rsi_6_of_low, 2), 'green')
+                createTooltipLine('', price, 'font-size: 16px; margin-bottom: 4px; color: black; font-weight: bold;'),
+                createTooltipLine('Time+7', dateStr, 'margin-bottom: 2px; color: black;'),
+                createTooltipLine('High', data.high, 'margin-bottom: 2px; color: black;'),
+                createTooltipLine('Low', data.low, 'margin-bottom: 2px; color: black;'),
+                createTooltipLine('RSI (6)', parseFixed(rawData.rsi_6, 2), 'margin-bottom: 2px; color: black;'),
+                createTooltipLine('RSI high (6)', parseFixed(rawData.rsi_6_high, 2), 'margin-bottom: 2px; color: red;'),
+                createTooltipLine('RSI low (6)', parseFixed(rawData.rsi_6_low, 2), 'margin-bottom: 2px; color: green;')
             ];
 
-            toolTip.innerHTML = `
-            <div style="font-size: 16px; margin-bottom: 4px; color: ${'black'}">
-            ${price}
-            </div>
-            ${toolTipLines.join('')}
-            `;
+            toolTip.innerHTML = toolTipLines.join('');
 
-            toolTip.style.display = 'block';
             const y = param.point.y;
+            const toolTipWidth = 80;
+            const toolTipHeight = 80;
+            const toolTipMargin = 15;
             let left = param.point.x + toolTipMargin;
             if (left > chartContainer.clientWidth - toolTipWidth) {
                 left = param.point.x - toolTipMargin - toolTipWidth;
@@ -208,17 +230,19 @@ function createChartElement(data) {
             if (top > chartContainer.clientHeight - toolTipHeight) {
                 top = y - toolTipHeight - toolTipMargin;
             }
+            toolTip.style.display = 'block';
             toolTip.style.left = left + 'px';
             toolTip.style.top = '1rem';
         }
     });
 
-    const ma20LineSeries = chart.addSeries(LineSeries, { color: '#39e75f' });
-    ma20LineSeries.setData(ma20);
-    const ma50LineSeries = chart.addSeries(LineSeries, { color: '#f9c74f' });
-    ma50LineSeries.setData(ma50);
+    // Add line series
+    Object.keys(line).forEach(key => {
+        const options = config.LineSeries[key] || {};
+        const lineObj = new Line(chart, line[key], { ...defaultLineOptions, ...options }, `line-${key}`);
+        lineObj.render();
+    });
 
-    // chart.timeScale().fitContent();
     chart.timeScale().setVisibleLogicalRange(visibleRange);
 }
 
@@ -231,17 +255,6 @@ function papaComplete(results) {
     createChartElement(data);
 }
 
-function parseOnFileInput() {
-    document.getElementById('fileInput').addEventListener('change', function (e) {
-        const file = e.target.files[0];
-        Papa.parse(file, {
-            complete: papaComplete,
-            header: true,
-            skipEmptyLines: true,
-        });
-    });
-}
-
 /**
  * Initialize parsing on page load if a source parameter is present in the URL.
  */
@@ -250,7 +263,7 @@ function initParseOnLoad() {
     const path = 'dist/file';
     const origin = location.origin;
     const source = url.searchParams.get('source');
-    const chartTitle = document.getElementById('chart-title');
+    const chartTitle = document.getElementById('chartTitle');
     const csvPath = `${origin}/${path}/${source}`;
 
     if (source) {
@@ -266,6 +279,11 @@ function initParseOnLoad() {
     }
 }
 
+/**
+ * Fetch data from a URL.
+ * @param {string} url - The URL to fetch data from.
+ * @returns {Promise<Object>} - A promise that resolves to the fetched data.
+ */
 async function startFetch(url) {
     try {
         const response = await fetch(url);
@@ -279,6 +297,9 @@ async function startFetch(url) {
     }
 }
 
+/**
+ * Initialize the fetch button to start fetching data.
+ */
 function initFetchHandler() {
     document.getElementById('fetch-button').addEventListener('click', function (e) {
         e.preventDefault();

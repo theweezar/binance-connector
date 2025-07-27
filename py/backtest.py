@@ -114,6 +114,90 @@ def start_plot(plot_df: pd.DataFrame):
     plt.show()
 
 
+def apply_long(df: pd.DataFrame):
+    long_mask = df["rsi_6_low"] < 20
+    # long_mask = long_mask & (df["close"] > df["ema_34"])
+    # long_mask = long_mask & (df["close"] > df["donchian_high"].shift(1))
+    # long_mask = long_mask & (df["adx"] > 25) & (df["+di"] > df["-di"])
+    df.loc[long_mask, "position"] = 1
+    return df
+
+
+def apply_short(df: pd.DataFrame):
+    short_mask = df["rsi_6_high"] > 80
+    # short_mask = short_mask & (df["close"] < df["ema_34"])
+    # short_mask = short_mask & (df["close"] < df["donchian_low"].shift(1))
+    # short_mask = short_mask & (df["adx"] > 25) & (df["-di"] > df["+di"])
+    df.loc[short_mask, "position"] = 0
+    return df
+
+
+def is_bullish_engulfing(row, prev_row):
+    """
+    Check if the current row is a bullish engulfing pattern compared to the previous row.
+    Args:
+        row (pd.Series): Current row of the DataFrame.
+        prev_row (pd.Series): Previous row of the DataFrame.
+    Returns:
+        bool: True if the current row is a bullish engulfing pattern, False otherwise.
+    """
+    return (
+        prev_row["close"] < prev_row["open"]
+        and row["close"] > row["open"]
+        and row["close"] > prev_row["open"]
+        and row["open"] < prev_row["close"]
+    )
+
+
+def is_bearish_engulfing(row, prev_row):
+    """
+    Check if the current row is a bearish engulfing pattern compared to the previous row.
+    Args:
+        row (pd.Series): Current row of the DataFrame.
+        prev_row (pd.Series): Previous row of the DataFrame.
+    Returns:
+        bool: True if the current row is a bearish engulfing pattern, False otherwise.
+    """
+    return (
+        prev_row["close"] > prev_row["open"]
+        and row["close"] < row["open"]
+        and row["open"] > prev_row["close"]
+        and row["close"] < prev_row["open"]
+    )
+
+
+def signal_generator(df):
+    """
+    Generate trading signals based on EMA crossovers and engulfing patterns.
+    Args:
+        df (pd.DataFrame): DataFrame containing market data with EMA columns.
+    Returns:
+        pd.DataFrame: DataFrame with a new 'position' column indicating trading signals.
+    """
+
+    for i in range(1, len(df)):
+        prev = df.iloc[i - 1]
+        curr = df.iloc[i]
+        # Example: EMA crossover + bullish engulfing + RSI confirmation
+        bullish_cross = (
+            prev["ema_9"] < prev["ema_21"] and curr["ema_9"] > curr["ema_21"]
+        )
+        bearish_cross = (
+            prev["ema_9"] > prev["ema_21"] and curr["ema_9"] < curr["ema_21"]
+        )
+        bullish_engulf = is_bullish_engulfing(curr, prev)
+        bearish_engulf = is_bearish_engulfing(curr, prev)
+        rsi_ok_long = curr["rsi_14"] > 50
+        rsi_ok_short = curr["rsi_14"] < 50
+        # Long entry conditions
+        if bullish_cross and bullish_engulf and rsi_ok_long:
+            df.at[df.index[i], "position"] = 1
+        # Short entry conditions
+        if bearish_cross and bearish_engulf and rsi_ok_short:
+            df.at[df.index[i], "position"] = 0
+    return df
+
+
 class Back_Test_CLI:
     """
     CLI tool for simple backtesting and plotting based on RSI signals.
@@ -145,12 +229,13 @@ class Back_Test_CLI:
         df["position"] = "-"
 
         # Long condition
-        long_mask = df["rsi_6_of_low"] < 20  # & (df["rsi_9_of_low"] < 30)
-        df.loc[long_mask, "position"] = 1  # Long
+        df = apply_long(df)
 
         # Short condition
-        short_mask = df["rsi_6_of_high"] > 80  # & (df["rsi_9_of_high"] > 89)
-        df.loc[short_mask, "position"] = 0  # Short
+        df = apply_short(df)
+
+        # Signal generator
+        df = signal_generator(df)
 
         # Plot last N rows
         plot_df = df.tail(tail).reset_index(drop=True)
@@ -162,10 +247,8 @@ class Back_Test_CLI:
         # TODO: Write a function to calculate profit/loss based on positions.
 
         if filter == "select-max-min":
-            plot_df = select_short_position_maximum_of(
-                plot_df, "rsi_6_of_high", steps=6
-            )
-            plot_df = select_long_position_minimum_of(plot_df, "rsi_6_of_low", steps=6)
+            plot_df = select_short_position_maximum_of(plot_df, "rsi_6_high", steps=6)
+            plot_df = select_long_position_minimum_of(plot_df, "rsi_6_low", steps=6)
 
         now_dt = datetime.now(timezone.utc)
         now_str = now_dt.strftime("%Y-%m-%d")
@@ -173,11 +256,10 @@ class Back_Test_CLI:
         print(f"Found {len(count_position_today)} positions today.")
 
         if output:
-            resolved_output = file.resolve(output)
-            with open(resolved_output, "w") as f:
-                f.write(plot_df.to_csv(index_label="index", lineterminator="\n"))
-                print(f"Exported last {tail} rows to {resolved_output}")
-                print(f"Successfully processed backtest for {source}")
+            file.write_dataframe(plot_df, output)
+            print(
+                f"Successfully processed backtest for {source}. Exported last {tail} rows"
+            )
 
         if plot == "true":
             start_plot(plot_df)

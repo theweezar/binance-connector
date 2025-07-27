@@ -375,6 +375,7 @@ class Price_CLI:
         """
         headers = [
             "symbol",
+            "timestamp",
             "date",
             "start",
             "end",
@@ -405,6 +406,7 @@ class Price_CLI:
                 writer.writerow(
                     {
                         "symbol": symbol,
+                        "timestamp": open_time.timestamp(),
                         "date": open_time.strftime("%Y-%m-%d"),
                         "start": open_time.strftime("%Y-%m-%d %H:%M:%S"),
                         "end": close_time.strftime("%Y-%m-%d %H:%M:%S"),

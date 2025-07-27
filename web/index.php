@@ -72,9 +72,19 @@
             <main class="col-12 col-md-8 col-lg-9">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-white d-flex align-items-center">
-                        <h5 class="m-0">
-                            <span>Backtest Chart:</span> <span id="chart-title"></span>
-                        </h5>
+                        <div class="dropdown chart-settings">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="chartSettings" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>Backtest Chart:</span> <span id="chartTitle"></span>
+                            </button>
+                            <ul class="dropdown-menu w-100 px-2" aria-labelledby="chartSettings">
+                                <li>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="trendLineSeries" checked>
+                                        <label class="form-check-label" for="trendLineSeries">Trend Line</label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                         <div class="ms-auto">
                             <a
                                 id="fetch-button"

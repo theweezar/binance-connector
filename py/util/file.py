@@ -18,7 +18,7 @@ def resolve(path: str) -> Path:
     return Path(os.path.join(os.getcwd(), path)).resolve()
 
 
-def get_source(source: str) -> dict[str, pandas.DataFrame, str]:
+def get_source(source: str) -> dict[pandas.DataFrame, str, str]:
     """
     Get the source data from a CSV file.
 
@@ -49,6 +49,30 @@ def write(path: str, content: str, mode="w"):
 
     with open(_path, mode) as f:
         f.write(content)
+
+
+def write_dataframe(df: pandas.DataFrame, path: str):
+    """
+    Write a DataFrame to a CSV file.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame to write.
+        path (str): The path to the output CSV file.
+    """
+    if not isinstance(df, pandas.DataFrame):
+        raise TypeError("Expected a pandas DataFrame")
+
+    resolved_path = resolve(path)
+
+    try:
+        df.drop(columns=["index"], inplace=True)
+    except KeyError:
+        pass
+
+    with open(resolved_path, "w") as f:
+        f.write(df.to_csv(index_label="index", lineterminator="\n"))
+
+    print(f"Exported DataFrame to {resolved_path}")
 
 
 def require(path: str) -> dict:

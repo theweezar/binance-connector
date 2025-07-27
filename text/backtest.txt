@@ -6,8 +6,8 @@ create library to perform back test and plot following instruction:
 - get data frame by `file.get_source(source)`.
 - data frame already has indicators needed.
 - perform back test following conditions and instruction:
-    - when long: `df["rsi_6_of_low"]` < 40.
-    - when short: `df["rsi_6_of_high"]` > 85.
+    - when long: `df["rsi_6_low"]` < 40.
+    - when short: `df["rsi_6_high"]` > 85.
     - set `position`: long is 1, short is 0, not matching is '-', to the matched rows.
 - plot the data frame following instruction:
     - plot the last 1000 rows.
@@ -19,8 +19,8 @@ create library to perform back test and plot following instruction:
 update code:
 - `df.loc` is very limited when it comes with multiple conditions, replace `df.loc` with another solution.
 - update RSI conditions:
-    - when long: `df["rsi_6_of_low"] < 27 and df["rsi_9_of_low"] < 30`.
-    - when short: `df["rsi_6_of_high"] > 90 and df["rsi_9_of_high"] > 89`.
+    - when long: `df["rsi_6_low"] < 27 and df["rsi_9_of_low"] < 30`.
+    - when short: `df["rsi_6_high"] > 90 and df["rsi_9_of_high"] > 89`.
 
 ---
 
