@@ -16,16 +16,15 @@ class RSI_CLI(object):
             desired (str): The desired RSI value list separate by comma (,).
             price_type (str): The type of price to use (default is "close").
         """
-        _source = file.get_source(source)
-        dataframe = _source["dataframe"]
+        df = file.get_source(source)
         desired_list = list(desired)
         _offset = float(str(offset).strip())
-        price_series = dataframe["close"]
-        
+        price_series = df["close"]
+
         if price_type == "high":
-            price_series = dataframe["high"]
+            price_series = df["high"]
         elif price_type == "low":
-            price_series = dataframe["low"]
+            price_series = df["low"]
 
         for item in desired_list:
             desired_rsi = float(str(item).strip())

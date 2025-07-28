@@ -17,12 +17,10 @@ class Processor_CLI(object):
             source (str): The path to the source data.
             output (str): The path to the output data.
         """
-        _source = file.get_source(source)
-
-        print(f"Start processing data for {_source['filepath']}")
-
-        df = indicator.apply(_source["dataframe"])
-
+        df = file.get_source(source)
+        filepath = file.resolve(source)
+        print(f"Start processing data for {filepath}")
+        df = indicator.apply(df)
         file.write_dataframe(df, output)
 
     def polyfit(self, source: str, output: str, steps: int = 6):
@@ -34,8 +32,7 @@ class Processor_CLI(object):
             output (str): The path to the output data.
             steps (int): The number of steps for the polynomial fitting.
         """
-        _source = file.get_source(source)
-        df = _source["dataframe"]
+        df = file.get_source(source)
         length = len(df)
         cp_df = df.copy()
         cp_df["trend"] = "-"

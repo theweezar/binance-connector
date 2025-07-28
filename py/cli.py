@@ -1,6 +1,6 @@
 import fire
 import importlib
-from util import file
+from util import file, object as obj
 from sklearn.metrics import accuracy_score
 from processors import preprocessor
 
@@ -15,8 +15,8 @@ class Model(object):
             source (str): The path to the source data.
             export (str, optional): The path to export the trained model. Defaults to "".
         """
-        _source = file.get_source(source)
-        x, y, symbol = preprocessor.process_data(_source["dataframe"], dropna=True)
+        df = file.get_source(source)
+        x, y, symbol = preprocessor.process_data(df, dropna=True)
 
         print(f"Start analyzing price data for {symbol}")
 
@@ -24,7 +24,7 @@ class Model(object):
         _model = _module.train(x.values, y.values)
 
         if export != "":
-            file.export_py_object(export, _model)
+            obj.export(export, _model)
 
     def predict(self, source, model, timesteps=60):
         """
@@ -35,10 +35,10 @@ class Model(object):
             model (str): The path to the trained model.
             timesteps (int, optional): The number of timesteps for prediction. Defaults to 60.
         """
-        _source = file.get_source(source)
-        x, y, symbol = preprocessor.process_data(_source["dataframe"], dropna=False)
+        df = file.get_source(source)
+        x, y, symbol = preprocessor.process_data(df, dropna=False)
         model_path = file.resolve(model)
-        _model = file.load(model_path)
+        _model = obj.load(model_path)
 
         print(f"Start predicting price for {symbol}")
 

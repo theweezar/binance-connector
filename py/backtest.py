@@ -70,14 +70,14 @@ class Back_Test_CLI:
             filter (str): Filter to apply on the DataFrame.
         """
         # Load data
-        src = file.get_source(source)
-        df = src["dataframe"]
+        df = file.get_source(source)
 
         # Plot last N rows
         plot_df = df.tail(tail).reset_index(drop=True)
 
         # Set position column based on RSI conditions
         plot_df["position"] = "-"
+        plot_df["sensitive_position"] = "-"
         plot_df = strategy.apply_rsi_6(plot_df)
         count_position = plot_df[plot_df["position"] != "-"]
 

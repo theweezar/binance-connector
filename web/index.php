@@ -15,17 +15,18 @@
     <div class="container-fluid py-4 h-100">
         <div class="row h-100">
             <nav class="col-12 col-md-4 col-lg-3 mb-4 mb-md-0">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white">
+                <div class="card cart-tree-view shadow-sm">
+                    <!-- <div class="card-header bg-white">
                         <h5 class="mb-0">Files in <code>/dist/file</code></h5>
-                    </div>
+                    </div> -->
                     <div class="card-body p-2" id="tree-view">
                         <?php
                         function listFilesTree($dir, $base = '')
                         {
                             $files = scandir($dir);
+                            $source = $_GET['source'] ?? '';
                         ?>
-                            <ul class="list-unstyled ms-2">
+                            <ul class="list-unstyled data-list">
                                 <?php foreach ($files as $file):
                                     if ($file === '.' || $file === '..') continue;
                                     $fullPath = $dir . DIRECTORY_SEPARATOR . $file;
@@ -41,7 +42,7 @@
                                     <?php else: ?>
                                         <li>
                                             <a
-                                                class="link-primary text-decoration-none d-block py-2"
+                                                class="data-link text-decoration-none d-block p-2 <?= ($source === $relativePath ? 'selected bg-dark text-white' : '') ?>"
                                                 href="?source=<?= htmlspecialchars($relativePath) ?>"
                                                 data-symbol="<?= htmlspecialchars($symbol) ?>"
                                                 data-interval="<?= htmlspecialchars($interval) ?>">

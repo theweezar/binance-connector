@@ -77,11 +77,21 @@ def apply_rsi_6(df: pd.DataFrame):
         pd.DataFrame: DataFrame with a new 'position' column indicating trading signals.
     """
 
-    long_mask = (df["rsi_6_low"] < 25) & (df["rsi_6_low"] > 4)
+    low_column = "rsi_6_low"
+    high_column = "rsi_6_high"
+
+    long_mask = (df[low_column] < 25) & (df[low_column] > 4)
     df.loc[long_mask, "position"] = 1
 
-    short_mask = (df["rsi_6_high"] > 75) & (df["rsi_6_high"] < 95)
+    short_mask = (df[high_column] > 75) & (df[high_column] < 95)
     df.loc[short_mask, "position"] = 0
+
+    sensitive_long_mask = df[low_column] < 4
+    df.loc[sensitive_long_mask, "sensitive_position"] = 1
+
+    sensitive_short_mask = df[high_column] > 95
+    df.loc[sensitive_short_mask, "sensitive_position"] = 0
+
     return df
 
 
@@ -119,6 +129,44 @@ def is_bearish_engulfing(row: pd.Series, prev_row: pd.Series) -> bool:
     )
 
 
+def cross_up(
+    prev_col: pd.Series, curr_col: pd.Series, subject_name: str, object_name: str
+):
+    """
+    Check if the current column crosses above the previous column.
+    Args:
+        prev_col (pd.Series): Previous column.
+        curr_col (pd.Series): Current column.
+        subject_name (str): Name of the subject series.
+        object_name (str): Name of the object series.
+    Returns:
+        bool: True if current crosses above previous, False otherwise.
+    """
+    return (
+        prev_col[subject_name] < prev_col[object_name]
+        and curr_col[subject_name] > curr_col[object_name]
+    )
+
+
+def cross_down(
+    prev_col: pd.Series, curr_col: pd.Series, subject_name: str, object_name: str
+):
+    """
+    Check if the current column crosses below the previous column.
+    Args:
+        prev_col (pd.Series): Previous column.
+        curr_col (pd.Series): Current column.
+        subject_name (str): Name of the subject series.
+        object_name (str): Name of the object series.
+    Returns:
+        bool: True if current crosses below previous, False otherwise.
+    """
+    return (
+        prev_col[subject_name] > prev_col[object_name]
+        and curr_col[subject_name] < curr_col[object_name]
+    )
+
+
 def apply_engulfing(df: pd.DataFrame):
     """
     Generate trading signals based on EMA crossovers and engulfing patterns.
@@ -132,12 +180,8 @@ def apply_engulfing(df: pd.DataFrame):
         prev = df.iloc[i - 1]
         curr = df.iloc[i]
         # Example: EMA crossover + bullish engulfing + RSI confirmation
-        bullish_cross = (
-            prev["ema_9"] < prev["ema_21"] and curr["ema_9"] > curr["ema_21"]
-        )
-        bearish_cross = (
-            prev["ema_9"] > prev["ema_21"] and curr["ema_9"] < curr["ema_21"]
-        )
+        bullish_cross = cross_up(prev, curr, "ema_9", "ema_21")
+        bearish_cross = cross_down(prev, curr, "ema_9", "ema_21")
         bullish_engulf = is_bullish_engulfing(curr, prev)
         bearish_engulf = is_bearish_engulfing(curr, prev)
         # Long entry conditions

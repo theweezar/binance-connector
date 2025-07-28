@@ -1,12 +1,12 @@
 import ta
 import ta.momentum
 import ta.trend
-import file
 import pandas as pd
 import datetime
 import re
 import fire
 import processor
+from util import file
 from sklearn.metrics import accuracy_score
 
 
@@ -88,8 +88,7 @@ def get_all_dataframes(config_path: str) -> list[pd.DataFrame]:
     dataframes = []
 
     for conf in unify_config:
-        src = file.get_source(conf["path"])
-        df = src["dataframe"]
+        df = file.get_source(conf["path"])
 
         # Rename columns based on configuration
         rename_config = conf["rename"]["columns"]

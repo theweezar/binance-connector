@@ -18,7 +18,7 @@ def resolve(path: str) -> Path:
     return Path(os.path.join(os.getcwd(), path)).resolve()
 
 
-def get_source(source: str) -> dict[pandas.DataFrame, str, str]:
+def get_source(source: str) -> pandas.DataFrame:
     """
     Get the source data from a CSV file.
 
@@ -32,13 +32,11 @@ def get_source(source: str) -> dict[pandas.DataFrame, str, str]:
         raise Exception("CSV not found")
 
     source_path = resolve(source)
-    path_split = os.path.split(source_path)
 
-    return {
-        "dataframe": pandas.read_csv(source_path, sep=","),
-        "filename": path_split[1],
-        "filepath": source_path,
-    }
+    if not os.path.exists(source_path):
+        raise FileNotFoundError(f"File not found: {source_path}")
+
+    return pandas.read_csv(source_path, sep=",")
 
 
 def write(path: str, content: str, mode="w"):

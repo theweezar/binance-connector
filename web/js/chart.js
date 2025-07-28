@@ -7,6 +7,10 @@ import config from './config.js';
 import Line from './line.js';
 import '../scss/bootstrap.scss';
 
+function has(obj, key) {
+    return obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '' && obj[key] !== '-';
+}
+
 /**
  * Process CSV data to generate candlestick series, markers, and MA lines.
  * @param {Array<Object>} data - Array of row objects from CSV.
@@ -43,13 +47,26 @@ function processChartData(data) {
             raw: row
         });
         // Markers
-        if (row.position !== '-' && row.position !== undefined && row.position !== null && row.position !== '') {
-            let isLong = Number(row.position) === 1;
+        if (has(row, 'position') || has(row, 'sensitive_position')) {
+            let isLong;
+            let color;
+
+            if (has(row, 'position')) {
+                isLong = Number(row.position) === 1;
+                color = isLong ? '#4AFA9A' : '#FF4976';
+            }
+
+            if (has(row, 'sensitive_position')) {
+                isLong = Number(row.sensitive_position) === 1;
+                color = isLong ? '#FFFF00' : '#7C4DFF';
+            }
+
             let price = isLong ? Number(row.low) : Number(row.high);
+
             seriesObject.marker.series.push({
                 time,
                 position: isLong ? 'belowBar' : 'aboveBar',
-                color: isLong ? '#4AFA9A' : '#FF4976',
+                color: color,
                 shape: isLong ? 'arrowUp' : 'arrowDown',
                 text: isLong ? `B: ${price}` : `S: ${price}`,
             });
