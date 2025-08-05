@@ -1,10 +1,10 @@
 'use strict';
 
-import { createChart, CandlestickSeries, createSeriesMarkers, LineSeries, CrosshairMode } from 'lightweight-charts';
+import { createChart, CandlestickSeries, createSeriesMarkers, CrosshairMode } from 'lightweight-charts';
 import Papa from 'papaparse';
 import moment from 'moment';
-import config from './config.js';
 import Line from './line.js';
+import { startFetch } from './api.js';
 import '../scss/bootstrap.scss';
 
 function has(obj, key) {
@@ -28,7 +28,7 @@ function processChartData(data) {
         rawMapping: {}
     }
 
-    Object.keys(config.LineSeries).forEach(key => {
+    Object.keys(window.config.LineSeries).forEach(key => {
         seriesObject.line[key] = [];
     });
 
@@ -63,13 +63,13 @@ function processChartData(data) {
 
             let price = isLong ? Number(row.low) : Number(row.high);
 
-            seriesObject.marker.series.push({
-                time,
-                position: isLong ? 'belowBar' : 'aboveBar',
-                color: color,
-                shape: isLong ? 'arrowUp' : 'arrowDown',
-                text: isLong ? `B: ${price}` : `S: ${price}`,
-            });
+            // seriesObject.marker.series.push({
+            //     time,
+            //     position: isLong ? 'belowBar' : 'aboveBar',
+            //     color: color,
+            //     shape: isLong ? 'arrowUp' : 'arrowDown',
+            //     text: isLong ? `B: ${price}` : `S: ${price}`,
+            // });
         }
         // MA lines
         Object.keys(seriesObject.line).forEach(key => {
@@ -80,6 +80,17 @@ function processChartData(data) {
                 });
             }
         });
+
+        if (has(row, 'extrema')) {
+            const extrema = row.extrema;
+            seriesObject.marker.series.push({
+                time,
+                position: extrema === 1 ? 'aboveBar' : 'belowBar',
+                color: extrema === 1 ? '#FF0000' : '#00FF00',
+                shape: 'circle',
+                text: extrema === 1 ? 'High' : 'Low'
+            });
+        }
 
         seriesObject.rawMapping[time] = row;
     });
@@ -223,17 +234,24 @@ function createChartElement(data) {
             const time = Number(param.time);
             const rawData = rawMapping[time] || {};
 
-            const toolTipLines = [
+            const defaultToolTipLines = [
                 createTooltipLine('', price, 'font-size: 16px; margin-bottom: 4px; color: black; font-weight: bold;'),
                 createTooltipLine('Time+7', dateStr, 'margin-bottom: 2px; color: black;'),
-                createTooltipLine('High', data.high, 'margin-bottom: 2px; color: black;'),
-                createTooltipLine('Low', data.low, 'margin-bottom: 2px; color: black;'),
-                createTooltipLine('RSI (6)', parseFixed(rawData.rsi_6, 2), 'margin-bottom: 2px; color: black;'),
-                createTooltipLine('RSI high (6)', parseFixed(rawData.rsi_6_high, 2), 'margin-bottom: 2px; color: red;'),
-                createTooltipLine('RSI low (6)', parseFixed(rawData.rsi_6_low, 2), 'margin-bottom: 2px; color: green;')
+                // createTooltipLine('High', data.high, 'margin-bottom: 2px; color: black;'),
+                // createTooltipLine('Low', data.low, 'margin-bottom: 2px; color: black;'),
+                // createTooltipLine('RSI (6)', parseFixed(rawData.rsi_6, 2), 'margin-bottom: 2px; color: black;'),
+                // createTooltipLine('RSI high (6)', parseFixed(rawData.rsi_6_high, 2), 'margin-bottom: 2px; color: red;'),
+                // createTooltipLine('RSI low (6)', parseFixed(rawData.rsi_6_low, 2), 'margin-bottom: 2px; color: green;')
             ];
 
-            toolTip.innerHTML = toolTipLines.join('');
+            Object.keys(window.config.Tooltip).forEach(key => {
+                const tooltipConfig = window.config.Tooltip[key];
+                const value = tooltipConfig.parseValue && typeof tooltipConfig.parseValue === 'function' ? tooltipConfig.parseValue(rawData[tooltipConfig.value]) : rawData[tooltipConfig.value];
+                const line = createTooltipLine(tooltipConfig.label, value, tooltipConfig.style);
+                defaultToolTipLines.push(line);
+            });
+
+            toolTip.innerHTML = defaultToolTipLines.join('');
 
             const y = param.point.y;
             const toolTipWidth = 80;
@@ -256,7 +274,7 @@ function createChartElement(data) {
 
     // Add line series
     Object.keys(line).forEach(key => {
-        const options = config.LineSeries[key] || {};
+        const options = window.config.LineSeries[key] || {};
         const lineObj = new Line(chart, line[key], { ...defaultLineOptions, ...options }, `line-${key}`);
         lineObj.render();
     });
@@ -298,24 +316,6 @@ function initParseOnLoad() {
 }
 
 /**
- * Fetch data from a URL.
- * @param {string} url - The URL to fetch data from.
- * @returns {Promise<Object>} - A promise that resolves to the fetched data.
- */
-async function startFetch(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('Fetch error:', error);
-    }
-}
-
-/**
  * Initialize the fetch button to start fetching data.
  */
 function initFetchHandler() {
@@ -323,7 +323,7 @@ function initFetchHandler() {
         e.preventDefault();
         this.disabled = true;
         this.classList.add('disabled');
-        startFetch(this.href).then(data => {
+        startFetch(this.href, true).then(data => {
             if (data && data.success === true) {
                 window.location.reload();
             } else {

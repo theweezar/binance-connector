@@ -3,6 +3,7 @@ from util import file
 from processors import indicator
 from termcolor import colored
 
+
 class RSI_CLI(object):
 
     def reverse(self, source, window, offset, desired, price_type="close"):
@@ -17,7 +18,12 @@ class RSI_CLI(object):
             price_type (str): The type of price to use (default is "close").
         """
         df = file.get_source(source)
-        desired_list = list(desired)
+
+        if isinstance(desired, int):
+            desired_list = [desired]
+        else:
+            desired_list = list(desired)
+
         _offset = float(str(offset).strip())
         price_series = df["close"]
 
@@ -33,13 +39,23 @@ class RSI_CLI(object):
                 price = indicator.calc_price_if_reverse_rsi_reach(
                     price_series, desired_rsi, window, _offset
                 )
-                print(colored(f"Price if RSI of \"{price_type}\" reaches {desired_rsi}: {price}", "red"))
+                print(
+                    colored(
+                        f'Price if RSI ({window}) of "{price_type}" reaches {desired_rsi}: {price}',
+                        "red",
+                    )
+                )
 
             elif _offset < 0:
                 price = indicator.calc_price_if_reverse_rsi_drop(
                     price_series, desired_rsi, window, _offset
                 )
-                print(colored(f"Price if RSI of \"{price_type}\" drops below {desired_rsi}: {price}", "green"))
+                print(
+                    colored(
+                        f'Price if RSI ({window}) of "{price_type}" drops below {desired_rsi}: {price}',
+                        "green",
+                    )
+                )
 
 
 if __name__ == "__main__":

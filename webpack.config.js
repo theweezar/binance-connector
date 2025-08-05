@@ -11,8 +11,9 @@ const cwd = process.cwd();
 const creatEntries = () => {
     const entries = [
         path.join(cwd, 'web/js/chart.js'),
-        path.join(cwd, 'web/js/bootstrap.js')
-    ]
+        path.join(cwd, 'web/js/bootstrap.js'),
+        path.join(cwd, 'web/js/md.js'),
+    ];
     const obj = {};
     entries.forEach((entry) => {
         const name = path.basename(entry, path.extname(entry));

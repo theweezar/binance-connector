@@ -13,3 +13,9 @@ python py/processor.py polyfit --source=$backtest_file_path --output=$backtest_f
 
 cp $backtest_file_path web/dist/file/
 echo "Copied backtest file to web/dist/file/"
+
+offset="$3"
+if [[ -n "$offset" ]]; then
+    python py/rsi.py reverse --source=$file_path --window=5 --offset=$offset --desired=80,85,87,90 --price_type=high
+    python py/rsi.py reverse --source=$file_path --window=5 --offset="-$offset" --desired=20,15 --price_type=low
+fi

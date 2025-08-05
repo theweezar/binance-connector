@@ -71,6 +71,11 @@ class Back_Test_CLI:
         """
         # Load data
         df = file.get_source(source)
+        symbol = df["symbol"].iloc[0] if "symbol" in df.columns else None
+
+        if symbol is None:
+            print("No symbol found in the DataFrame. Please check your source file.")
+            return
 
         # Plot last N rows
         plot_df = df.tail(tail).reset_index(drop=True)
@@ -78,7 +83,7 @@ class Back_Test_CLI:
         # Set position column based on RSI conditions
         plot_df["position"] = "-"
         plot_df["sensitive_position"] = "-"
-        plot_df = strategy.apply_rsi_6(plot_df)
+        plot_df = strategy.apply_rsi(plot_df)
         count_position = plot_df[plot_df["position"] != "-"]
 
         print(f"Found {len(count_position)} positions in the last {tail} rows.")
@@ -97,6 +102,8 @@ class Back_Test_CLI:
         now_str = now_dt.strftime("%Y-%m-%d")
         count_position_today = count_position[count_position["date"] == now_str]
         print(f"Found {len(count_position_today)} positions today in UTC timezone.")
+
+        strategy.detect_rsi_divergence(plot_df, order=6)
 
         if output:
             file.write_dataframe(plot_df, output)

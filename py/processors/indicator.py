@@ -5,26 +5,26 @@ import pandas
 import ta
 
 
-def add_rsi(frame: pandas.DataFrame, period: int, column_name: str = "close"):
+def add_rsi(frame: pandas.DataFrame, window: int, column_name: str = "close"):
     """
     Add Relative Strength Index (RSI) to the DataFrame.
 
     Args:
         frame (pandas.DataFrame): The input DataFrame.
-        period (int): The period for the RSI.
+        window (int): The window for the RSI.
         column_name (str): The column to calculate the RSI on.
 
     Returns:
         pandas.DataFrame: The DataFrame with the RSI added.
     """
-    df_col_name = f"rsi_{period}"
+    df_col_name = f"rsi_{window}"
     if column_name != "close":
-        df_col_name = f"rsi_{period}_{column_name}"
-    frame[df_col_name] = ta.momentum.rsi(frame[column_name], period)
+        df_col_name = f"rsi_{window}_{column_name}"
+    frame[df_col_name] = ta.momentum.rsi(frame[column_name], window)
     return frame
 
 
-def add_ema(frame: pandas.DataFrame, period: int, column_name: str = "close"):
+def add_ema(frame: pandas.DataFrame, window: int, column_name: str = "close"):
     """
     Add Exponential Moving Average (EMA) to the DataFrame.
 
@@ -36,11 +36,11 @@ def add_ema(frame: pandas.DataFrame, period: int, column_name: str = "close"):
     Returns:
         pandas.DataFrame: The DataFrame with the EMA added.
     """
-    frame[f"ema_{period}"] = ta.trend.ema_indicator(frame[column_name], period)
+    frame[f"ema_{window}"] = ta.trend.ema_indicator(frame[column_name], window)
     return frame
 
 
-def add_ma(frame: pandas.DataFrame, period: int, column_name: str = "close"):
+def add_ma(frame: pandas.DataFrame, window: int, column_name: str = "close"):
     """
     Add Simple Moving Average (SMA) to the DataFrame.
 
@@ -52,7 +52,7 @@ def add_ma(frame: pandas.DataFrame, period: int, column_name: str = "close"):
     Returns:
         pandas.DataFrame: The DataFrame with the SMA added.
     """
-    frame[f"ma_{period}"] = ta.trend.sma_indicator(frame[column_name], period)
+    frame[f"ma_{window}"] = ta.trend.sma_indicator(frame[column_name], window)
     return frame
 
 
@@ -113,36 +113,42 @@ def apply(frame: pandas.DataFrame):
     frame["volatility"] = close.rolling(10).std()
 
     # Calculate RSI for different periods
+    frame = add_rsi(frame, 5, "close")
+    frame = add_rsi(frame, 5, "high")
+    frame = add_rsi(frame, 5, "low")
+
     frame = add_rsi(frame, 6, "close")
     frame = add_rsi(frame, 6, "high")
     frame = add_rsi(frame, 6, "low")
+
     frame = add_rsi(frame, 14, "close")
 
     # Calculate EMA and SMA
     frame = add_ema(frame, 9, "close")
     frame = add_ema(frame, 21, "close")
-    frame = add_ema(frame, 34, "close")
-    frame = add_ema(frame, 50, "close")
-    frame = add_ema(frame, 89, "close")
+    # frame = add_ema(frame, 34, "close")
+    # frame = add_ema(frame, 50, "close")
+    # frame = add_ema(frame, 89, "close")
     frame = add_ma(frame, 9, "close")
-    frame = add_ma(frame, 20, "close")
+    # frame = add_ma(frame, 20, "close")
     frame = add_ma(frame, 21, "close")
-    frame = add_ma(frame, 50, "close")
+    # frame = add_ma(frame, 50, "close")
 
     # ema_trend = ema_34 - ema_89
     # frame["ema_trend"] = ema_trend
 
     frame = add_macd(frame, "close")
+    frame = add_adx(frame, 5)
     frame = add_adx(frame, 6)
     frame = add_adx(frame, 14)
 
     # Donchian Channel (20-period)
-    frame["donchian_high"] = high.rolling(window=20).max()
-    frame["donchian_low"] = low.rolling(window=20).min()
+    # frame["donchian_high"] = high.rolling(window=20).max()
+    # frame["donchian_low"] = low.rolling(window=20).min()
 
-    frame["vwap"] = ta.volume.VolumeWeightedAveragePrice(
-        high=high, low=low, close=close, volume=volumne
-    ).vwap
+    # frame["vwap"] = ta.volume.VolumeWeightedAveragePrice(
+    #     high=high, low=low, close=close, volume=volumne
+    # ).vwap
 
     # frame["next_type"] = frame["type"].shift(-1)
 

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from scipy.signal import argrelextrema
 
 
 def select_short_position_maximum_of(
@@ -68,17 +69,18 @@ def select_long_position_minimum_of(df: pd.DataFrame, column_name: str, steps: i
     return cp_df
 
 
-def apply_rsi_6(df: pd.DataFrame):
+def apply_rsi(df: pd.DataFrame, window: int = 5):
     """
-    Apply RSI 6 conditions to the DataFrame to set trading positions.
+    Apply RSI-based trading signals to the DataFrame.
     Args:
         df (pd.DataFrame): DataFrame containing market data with RSI columns.
+        window (int): RSI window size.
     Returns:
         pd.DataFrame: DataFrame with a new 'position' column indicating trading signals.
     """
 
-    low_column = "rsi_6_low"
-    high_column = "rsi_6_high"
+    low_column = f"rsi_{window}_low"
+    high_column = f"rsi_{window}_high"
 
     long_mask = (df[low_column] < 25) & (df[low_column] > 4)
     df.loc[long_mask, "position"] = 1
@@ -242,3 +244,67 @@ def apply_rsi_adx_trends(df: pd.DataFrame, method: str = "polyfit"):
     df.loc[short_mask, "position"] = 0
 
     return df
+
+
+def find_local_extrema(series: pd.Series, order: int = 5, mode: str = "max"):
+    if mode == "max":
+        idx = argrelextrema(series.values, np.greater_equal, order=order)[0]
+    else:
+        idx = argrelextrema(series.values, np.less_equal, order=order)[0]
+    return idx
+
+
+def detect_rsi_divergence(df: pd.DataFrame, order: int):
+    # Find swing highs and lows in price
+
+    length = len(df)
+    latest_100 = df[length - 100 : length]
+
+    highs = find_local_extrema(latest_100["close"], order=order, mode="max")
+    lows = find_local_extrema(latest_100["close"], order=order, mode="min")
+
+    highs = highs + (length - 100)
+    lows = lows + (length - 100)
+
+    print(f"Highs found at indices: {highs}")
+    print(f"Lows found at indices: {lows}")
+
+    df.loc[df.index, "extrema"] = "-"
+    df.loc[highs, "extrema"] = 1
+    df.loc[lows, "extrema"] = 0
+
+    return
+
+    # Find corresponding RSI values at those points
+    results = []
+    # Bullish divergence: price lower low, RSI higher low
+    for i in range(1, len(lows)):
+        prev, curr = lows[i - 1], lows[i]
+        if (
+            df["close"].iloc[curr] < df["close"].iloc[prev]
+            and df["rsi"].iloc[curr] > df["rsi"].iloc[prev]
+        ):
+            results.append(
+                {
+                    "type": "bullish",
+                    "index": curr,
+                    "price": df["close"].iloc[curr],
+                    "rsi": df["rsi"].iloc[curr],
+                }
+            )
+    # Bearish divergence: price higher high, RSI lower high
+    for i in range(1, len(highs)):
+        prev, curr = highs[i - 1], highs[i]
+        if (
+            df["close"].iloc[curr] > df["close"].iloc[prev]
+            and df["rsi"].iloc[curr] < df["rsi"].iloc[prev]
+        ):
+            results.append(
+                {
+                    "type": "bearish",
+                    "index": curr,
+                    "price": df["close"].iloc[curr],
+                    "rsi": df["rsi"].iloc[curr],
+                }
+            )
+    return results
