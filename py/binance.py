@@ -390,6 +390,9 @@ class Price_CLI:
         mode = "a" if append else "w"
         write_header = not append or not os.path.exists(resolved_path)
         # vnt_tz = timezone(timedelta(hours=7, minutes=0))
+
+        mul = 1000 if symbol == "PEPEUSDT" else 1
+
         with open(resolved_path, mode, newline="") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=headers)
             if write_header:
@@ -397,10 +400,10 @@ class Price_CLI:
             for row in all_klines:
                 open_time = datetime.fromtimestamp(row[0] / 1000, tz=timezone.utc)
                 close_time = datetime.fromtimestamp(row[6] / 1000, tz=timezone.utc)
-                open_price = float(row[1])
-                high_price = float(row[2])
-                low_price = float(row[3])
-                close_price = float(row[4])
+                open_price = float(row[1]) * mul
+                high_price = float(row[2]) * mul
+                low_price = float(row[3]) * mul
+                close_price = float(row[4]) * mul
                 vol = float(row[5])
                 candle_type = 1 if close_price > open_price else 0
                 writer.writerow(

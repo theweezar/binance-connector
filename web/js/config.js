@@ -26,14 +26,20 @@
             // ma_21: {
             //     color: '#f7b731'
             // },
-            ema_9: {
+            ema_fast: {
                 color: '#39e75f'
             },
-            ema_21: {
+            ema_slow: {
                 color: '#f7b731'
             },
             // ema_50: {
             //     color: '#f7b731'
+            // }
+            // support: {
+            //     color: '#00FF00',
+            // },
+            // resistance: {
+            //     color: '#FF0000',
             // }
         },
         Tooltip: [
@@ -48,23 +54,23 @@
                 style: 'margin-bottom: 2px; color: black;'
             },
             {
-                label: 'RSI (5)',
-                value: 'rsi_5',
+                label: 'RSI (9)',
+                value: 'rsi_9',
                 parseValue: (value) => parseFixed(value, 2),
                 style: 'margin-bottom: 2px; color: black;'
             },
-            {
-                label: 'RSI high (5)',
-                value: 'rsi_5_high',
-                parseValue: (value) => parseFixed(value, 2),
-                style: 'margin-bottom: 2px; color: red;'
-            },
-            {
-                label: 'RSI low (5)',
-                value: 'rsi_5_low',
-                parseValue: (value) => parseFixed(value, 2),
-                style: 'margin-bottom: 2px; color: green;'
-            }
+            // {
+            //     label: 'RSI high (9)',
+            //     value: 'rsi_9_high',
+            //     parseValue: (value) => parseFixed(value, 2),
+            //     style: 'margin-bottom: 2px; color: red;'
+            // },
+            // {
+            //     label: 'RSI low (9)',
+            //     value: 'rsi_9_low',
+            //     parseValue: (value) => parseFixed(value, 2),
+            //     style: 'margin-bottom: 2px; color: green;'
+            // }
         ]
     };
 })();

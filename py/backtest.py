@@ -83,17 +83,17 @@ class Back_Test_CLI:
         # Set position column based on RSI conditions
         plot_df["position"] = "-"
         plot_df["sensitive_position"] = "-"
-        plot_df = strategy.apply_rsi(plot_df)
+        plot_df = strategy.apply_rsi(plot_df, 6)
         count_position = plot_df[plot_df["position"] != "-"]
 
         print(f"Found {len(count_position)} positions in the last {tail} rows.")
 
         if filter == "select-max-min":
             plot_df = strategy.select_short_position_maximum_of(
-                plot_df, "rsi_6_high", steps=6
+                plot_df, "rsi_9_high", window=6
             )
             plot_df = strategy.select_long_position_minimum_of(
-                plot_df, "rsi_6_low", steps=6
+                plot_df, "rsi_9_low", window=6
             )
 
         # plot_df = strategy.apply_rsi_adx_trends(plot_df)
@@ -103,7 +103,7 @@ class Back_Test_CLI:
         count_position_today = count_position[count_position["date"] == now_str]
         print(f"Found {len(count_position_today)} positions today in UTC timezone.")
 
-        strategy.detect_rsi_divergence(plot_df, order=6)
+        # strategy.detect_rsi_divergence(plot_df, order=6)
 
         if output:
             file.write_dataframe(plot_df, output)

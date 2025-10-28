@@ -41,7 +41,7 @@ class RSI_CLI(object):
                 )
                 print(
                     colored(
-                        f'Price if RSI ({window}) of "{price_type}" reaches {desired_rsi}: {price}',
+                        f'Price if RSI ({window}) of "{price_type}" reaches {desired_rsi}: {str(price)}',
                         "red",
                     )
                 )
@@ -52,7 +52,7 @@ class RSI_CLI(object):
                 )
                 print(
                     colored(
-                        f'Price if RSI ({window}) of "{price_type}" drops below {desired_rsi}: {price}',
+                        f'Price if RSI ({window}) of "{price_type}" drops below {desired_rsi}: {str(price)}',
                         "green",
                     )
                 )

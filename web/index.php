@@ -8,8 +8,8 @@
 
     <script src="./js/config.js"></script>
     <script defer src="./dist/resources/bootstrap.js"></script>
-    <script defer src="./dist/resources/chart.js"></script>
-    <link rel="stylesheet" href="./dist/resources/chart.css">
+    <script defer src="./dist/resources/main.js"></script>
+    <link rel="stylesheet" href="./dist/resources/main.css">
 </head>
 
 <body class="bg-light main-content">

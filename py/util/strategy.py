@@ -4,7 +4,7 @@ from scipy.signal import argrelextrema
 
 
 def select_short_position_maximum_of(
-    df: pd.DataFrame, column_name: str, steps: int = 5
+    df: pd.DataFrame, column_name: str, window: int = 5
 ):
     """
     For each rolling window of 'steps', keep only the short position (position==0)
@@ -13,18 +13,18 @@ def select_short_position_maximum_of(
     Args:
         df (pd.DataFrame): Input DataFrame.
         column_name (str): Column to find the maximum value for short positions.
-        steps (int): Size of the rolling window.
+        window (int): Size of the rolling window.
 
     Returns:
         pd.DataFrame: DataFrame with only the maximum short position kept per window.
     """
     cp_df = df.copy()
 
-    for i in range(0, len(cp_df) - steps + 1):
-        # Select group by steps
-        group_by_steps = cp_df[i : i + steps]
+    for i in range(0, len(cp_df) - window + 1):
+        # Select group by window
+        group_by_window = cp_df[i : i + window]
         # Select short positions in group
-        group_has_short = group_by_steps[group_by_steps["position"] == 0]
+        group_has_short = group_by_window[group_by_window["position"] == 0]
 
         if group_has_short.empty:
             continue
@@ -37,26 +37,28 @@ def select_short_position_maximum_of(
     return cp_df
 
 
-def select_long_position_minimum_of(df: pd.DataFrame, column_name: str, steps: int = 5):
+def select_long_position_minimum_of(
+    df: pd.DataFrame, column_name: str, window: int = 5
+):
     """
-    For each rolling window of 'steps', keep only the long position (position==1)
+    For each rolling window of 'window', keep only the long position (position==1)
     with the minimum value in the specified column, set others to "-".
 
     Args:
         df (pd.DataFrame): Input DataFrame.
         column_name (str): Column to find the minimum value for long positions.
-        steps (int): Size of the rolling window.
+        window (int): Size of the rolling window.
 
     Returns:
         pd.DataFrame: DataFrame with only the minimum long position kept per window.
     """
     cp_df = df.copy()
 
-    for i in range(0, len(cp_df) - steps + 1):
-        # Select group by steps
-        group_by_steps = cp_df[i : i + steps]
+    for i in range(0, len(cp_df) - window + 1):
+        # Select group by window
+        group_by_window = cp_df[i : i + window]
         # Select long positions in group
-        group_has_long = group_by_steps[group_by_steps["position"] == 1]
+        group_has_long = group_by_window[group_by_window["position"] == 1]
 
         if group_has_long.empty:
             continue
@@ -82,10 +84,10 @@ def apply_rsi(df: pd.DataFrame, window: int = 5):
     low_column = f"rsi_{window}_low"
     high_column = f"rsi_{window}_high"
 
-    long_mask = (df[low_column] < 25) & (df[low_column] > 4)
+    long_mask = (df[low_column] < 20) & (df[low_column] > 4)
     df.loc[long_mask, "position"] = 1
 
-    short_mask = (df[high_column] > 75) & (df[high_column] < 95)
+    short_mask = (df[high_column] > 80) & (df[high_column] < 95)
     df.loc[short_mask, "position"] = 0
 
     sensitive_long_mask = df[low_column] < 4
