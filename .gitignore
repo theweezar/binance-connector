@@ -1,0 +1,5 @@
+/node_modules
+/ignore
+/py/**/__pycache__
+/web/dist/file
+/web/dist/resources
