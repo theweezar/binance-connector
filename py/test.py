@@ -1,5 +1,3 @@
-from util import file
+d = {"a": 1, "b": 2, "c": 3}
 
-df = file.get_source("ignore/XAUT-USDT_15m.csv")
-
-print(df.iloc[0]["volume"])
+print(" | ".join([f"i={d[i]}" for i in d]))

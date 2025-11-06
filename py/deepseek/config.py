@@ -1,31 +1,24 @@
-# Trading system configuration
+# In config.py - CREATE A 15M CONFIG:
 class Config:
+    # Shorter periods for 15m data
     LOOKBACK_WINDOW = 90
     SENSITIVITY_FACTOR = 10
 
-    RSI_PERIOD = 14
+    RSI_PERIOD = 9
     RSI_OVERBOUGHT = 70
     RSI_OVERSOLD = 30
-    MA_SHORT = 50
-    MA_LONG = 200
-    BB_PERIOD = 20
-    BB_STD = 2
+    RSI_MA_PERIOD = 5
 
-    INITIAL_CAPITAL = 100000
-
-
-# In config.py - CREATE A 15M CONFIG:
-class Config15M:
-    # Shorter periods for 15m data
-    LOOKBACK_WINDOW = 90
-    SENSITIVITY_FACTOR = 15
-
-    RSI_PERIOD = 9
-    RSI_OVERBOUGHT = 65
-    RSI_OVERSOLD = 35
     MA_SHORT = 5
     MA_LONG = 20
+
+    EMA_SHORT = 5
+    EMA_LONG = 20
+
     BB_PERIOD = 20
     BB_STD = 2
 
     INITIAL_CAPITAL = 100000
+    SUPPORT_RESISTANCE_LOOKBACK = 21
+    VOLUME_MA_PERIOD = 5
+    MIN_VOLUME_STRENGTH = 1.1

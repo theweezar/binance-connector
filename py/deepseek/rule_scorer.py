@@ -1,22 +1,22 @@
 import numpy as np
+import pandas as pd
 
 
 class RuleScorer:
-    def __init__(self, config):
+    def __init__(self, config, rules: dict[str]):
         self.config = config
+        self.rules = rules
 
-    def calculate_rule_performance(self, df_subset):
-        """Calculate cumulative returns for each rule over the evaluation period"""
+    def calculate_rule_performance(self, df_subset: pd.DataFrame):
+        """Calculate cumulative returns for each rule including new ones"""
         performance = {}
 
-        for rule in ["rsi", "ma", "bb"]:
+        for rule in self.rules:
             signal_col = f"signal_{rule}"
-            returns = df_subset["returns"].iloc[1:].values  # Skip first NaN
-            signals = (
-                df_subset[signal_col].iloc[1:-1].values
-            )  # Align with next day's return
+            returns = df_subset["returns"].iloc[1:].values
+            signals = df_subset[signal_col].iloc[1:-1].values
 
-            # Calculate rule returns (signal * next_day_return)
+            # Handle fractional signals (like from RSI_MA and Price Action)
             rule_returns = signals * returns[1 : len(signals) + 1]
             cumulative_return = np.prod(1 + rule_returns) - 1
 
@@ -24,7 +24,7 @@ class RuleScorer:
 
         return performance
 
-    def calculate_rule_weights(self, performance_dict):
+    def calculate_rule_weights(self, performance_dict: dict):
         """Calculate exponential weights for each rule based on performance"""
         scores = {}
 
@@ -38,11 +38,12 @@ class RuleScorer:
 
         return weights
 
-    def get_current_weights(self, full_data, current_index):
+    def get_current_weights(self, full_data: pd.DataFrame, current_index):
         """Calculate weights for current point based on lookback window"""
         if current_index < self.config.LOOKBACK_WINDOW:
-            # Not enough data, return equal weights
-            return {"rsi": 0.33, "ma": 0.33, "bb": 0.34}
+            # Equal weights initially
+            equal_weight = 1.0 / len(self.rules)
+            return {rule: equal_weight for rule in self.rules}
 
         start_idx = current_index - self.config.LOOKBACK_WINDOW
         end_idx = current_index

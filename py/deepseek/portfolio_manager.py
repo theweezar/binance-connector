@@ -1,3 +1,4 @@
+import pandas as pd
 from datetime import datetime
 
 
@@ -5,23 +6,35 @@ class SignalFilter:
     def __init__(self, config):
         self.config = config
 
-    def volume_confirmation(self, df, current_index, volume_threshold=1.2):
+    def volume_confirmation(
+        self,
+        df: pd.DataFrame,
+        current_index: int,
+        volume_threshold: float = 1.2,
+        periods: int = 20,
+    ):
         """Require above-average volume for signals"""
-        if current_index < 20:
+        if current_index < periods:
             return True
 
         current_volume = df["volume"].iloc[current_index]
-        avg_volume = df["volume"].iloc[current_index - 20 : current_index].mean()
+        avg_volume = df["volume"].iloc[current_index - periods : current_index].mean()
 
         return current_volume > (avg_volume * volume_threshold)
 
-    def volatility_filter(self, df, current_index, max_volatility=0.02):
+    def volatility_filter(
+        self,
+        df: pd.DataFrame,
+        current_index: int,
+        max_volatility: float = 0.02,
+        periods: int = 10,
+    ):
         """Filter signals during high volatility periods"""
-        if current_index < 10:
+        if current_index < periods:
             return True
 
         recent_volatility = (
-            df["close"].iloc[current_index - 10 : current_index].pct_change().std()
+            df["close"].iloc[current_index - periods : current_index].pct_change().std()
         )
         return recent_volatility <= max_volatility
 
@@ -71,13 +84,24 @@ class PortfolioManager:
         self.positions.append(portfolio_snapshot)
         return portfolio_snapshot
 
-    def calculate_composite_signal(self, signals, weights):
-        """Calculate weighted composite signal"""
-        composite = (
-            signals.get("rsi", 0) * weights.get("rsi", 0)
-            + signals.get("ma", 0) * weights.get("ma", 0)
-            + signals.get("bb", 0) * weights.get("bb", 0)
-        )
+    def calculate_composite_signal(self, signals: dict, weights: dict):
+        """
+        Calculate weighted composite signal dynamically for all rules
+
+        Args:
+            signals: dict of {rule_name: signal_value}
+            weights: dict of {rule_name: weight_value}
+
+        Returns:
+            Composite signal as weighted sum of all rule signals
+        """
+        composite = 0.0
+
+        # Loop through all rules that have both signals and weights
+        for rule_name, signal_value in signals.items():
+            weight = weights.get(rule_name, 0)
+            composite += signal_value * weight
+
         return composite
 
     def generate_trading_decision(
@@ -107,11 +131,11 @@ class PortfolioManager:
         """Multi-threshold system with filters"""
 
         # STRICT FILTERS - Only trade if all pass
-        volume_ok = (
-            True  # self.signal_filter.volume_confirmation(current_data, current_index)
+        volume_ok = self.signal_filter.volume_confirmation(
+            current_data, current_index, volume_threshold=1.1, periods=9
         )
         volatility_ok = self.signal_filter.volatility_filter(
-            current_data, current_index
+            current_data, current_index, max_volatility=0.01, periods=9
         )
         time_ok = self.signal_filter.time_based_filter(
             current_data["timestamp"].iloc[current_index]
