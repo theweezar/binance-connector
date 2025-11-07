@@ -1,5 +1,6 @@
 import pandas as pd
 from collections import deque
+from typing import List, Tuple, Dict
 
 
 class PriceAction:
@@ -7,6 +8,333 @@ class PriceAction:
         self.config = config
         self.support_levels = deque(maxlen=10)  # Keep recent support levels
         self.resistance_levels = deque(maxlen=10)  # Keep recent resistance levels
+        self.swing_highs = []
+        self.swing_lows = []
+
+    def identify_supply_demand_zones(
+        self, df: pd.DataFrame, lookback: int = 20, min_strength: float = 2.0
+    ) -> List[Tuple[str, float, int]]:
+        """
+        Identify supply/demand zones based on price rejection and volume
+
+        Returns:
+            List of tuples: (zone_type, price_level, index)
+        """
+        zones = []
+        for i in range(lookback, len(df) - lookback):
+            current = df.iloc[i]
+            body_size = abs(current["close"] - current["open"])
+
+            if body_size == 0:  # Avoid division by zero
+                continue
+
+            # Check for supply zone (bearish rejection)
+            upper_wick_ratio = (
+                current["high"] - max(current["open"], current["close"])
+            ) / body_size
+            if current["close"] < current["open"] and upper_wick_ratio > min_strength:
+                zones.append(("supply", current["high"], i))
+
+            # Check for demand zone (bullish rejection)
+            lower_wick_ratio = (
+                min(current["open"], current["close"]) - current["low"]
+            ) / body_size
+            if current["close"] > current["open"] and lower_wick_ratio > min_strength:
+                zones.append(("demand", current["low"], i))
+
+        return zones
+
+    def detect_market_structure(
+        self, df: pd.DataFrame, swing_length: int = 5
+    ) -> Tuple[List[Tuple[int, float]], List[Tuple[int, float]]]:
+        """
+        Detect market structure shifts using swing point analysis
+
+        Returns:
+            Tuple of (swing_highs, swing_lows)
+        """
+        swing_highs = []
+        swing_lows = []
+
+        for i in range(swing_length, len(df) - swing_length):
+            current_high = df["high"].iloc[i]
+            current_low = df["low"].iloc[i]
+
+            # Check for swing high
+            left_highs = [df["high"].iloc[i - j] for j in range(1, swing_length + 1)]
+            right_highs = [df["high"].iloc[i + j] for j in range(1, swing_length + 1)]
+
+            if all(current_high > high for high in left_highs) and all(
+                current_high > high for high in right_highs
+            ):
+                swing_highs.append((i, current_high))
+
+            # Check for swing low
+            left_lows = [df["low"].iloc[i - j] for j in range(1, swing_length + 1)]
+            right_lows = [df["low"].iloc[i + j] for j in range(1, swing_length + 1)]
+
+            if all(current_low < low for low in left_lows) and all(
+                current_low < low for low in right_lows
+            ):
+                swing_lows.append((i, current_low))
+
+        self.swing_highs = swing_highs
+        self.swing_lows = swing_lows
+        return swing_highs, swing_lows
+
+    def volume_spike_analysis(
+        self, df: pd.DataFrame, volume_threshold: float = 1.5
+    ) -> List[Tuple[str, int]]:
+        """
+        ORIGINAL RULE: Volume spike analysis for breakout confirmation
+        This detects high volume breakouts with price acceptance
+        """
+        signals = []
+        for i in range(1, len(df)):
+            current = df.iloc[i]
+            prev = df.iloc[i - 1]
+
+            # High volume breakout with price acceptance
+            volume_spike = current["volume"] > prev["volume"] * volume_threshold
+            if current["high"] - current["low"] > 0:
+                price_acceptance = (
+                    abs(current["close"] - current["open"])
+                    / (current["high"] - current["low"])
+                    > 0.6
+                )
+            else:
+                price_acceptance = False
+
+            if volume_spike and price_acceptance:
+                if current["close"] > current["open"]:
+                    signals.append(("buy_acceptance", i))
+                else:
+                    signals.append(("sell_acceptance", i))
+
+        return signals
+
+    def calculate_volume_profile(
+        self, df: pd.DataFrame, lookback: int = 50
+    ) -> Dict[float, float]:
+        """
+        NEW RULE: Calculate volume profile distribution
+        Returns dictionary: {price_level: total_volume}
+        """
+        if len(df) < lookback:
+            lookback = len(df)
+
+        recent_data = df.iloc[-lookback:]
+        price_range = recent_data["high"].max() - recent_data["low"].min()
+        num_bins = 20
+        bin_size = price_range / num_bins
+        min_price = recent_data["low"].min()
+
+        volume_profile = {}
+
+        for i in range(num_bins):
+            price_level = min_price + (i * bin_size) + (bin_size / 2)
+            mask = (recent_data["low"] <= price_level + bin_size / 2) & (
+                recent_data["high"] >= price_level - bin_size / 2
+            )
+            volume_at_level = recent_data[mask]["volume"].sum()
+            volume_profile[price_level] = volume_at_level
+
+        return volume_profile
+
+    def volume_distribution_analysis(
+        self, df: pd.DataFrame, current_index: int
+    ) -> List[Tuple[str, int]]:
+        """
+        NEW RULE: Volume distribution analysis using volume profile concepts
+        This analyzes POC (Point of Control) and Value Area
+        """
+        signals = []
+
+        if current_index < self.config.VOLUME_PROFILE_LOOKBACK:
+            return signals
+
+        lookback_data = df.iloc[
+            current_index - self.config.VOLUME_PROFILE_LOOKBACK : current_index
+        ]
+        volume_profile = self.calculate_volume_profile(
+            lookback_data, self.config.VOLUME_PROFILE_LOOKBACK
+        )
+
+        if not volume_profile:
+            return signals
+
+        # Find Point of Control (POC)
+        poc_price = max(volume_profile.items(), key=lambda x: x[1])[0]
+        current_price = df["close"].iloc[current_index]
+        current_volume = df["volume"].iloc[current_index]
+        avg_volume = lookback_data["volume"].mean()
+
+        # Calculate Value Area (price levels containing 70% of volume)
+        total_volume = sum(volume_profile.values())
+        sorted_levels = sorted(volume_profile.items(), key=lambda x: x[1], reverse=True)
+
+        cumulative_volume = 0
+        value_area_prices = []
+
+        for price, volume in sorted_levels:
+            cumulative_volume += volume
+            value_area_prices.append(price)
+            if cumulative_volume / total_volume >= 0.7:
+                break
+
+        # Generate volume distribution signals
+        poc_distance = abs(current_price - poc_price) / current_price
+        volume_spike = current_volume > avg_volume * self.config.VOLUME_SPIKE_THRESHOLD
+
+        # Signal 1: Price at POC with volume confirmation
+        if poc_distance < 0.005 and volume_spike:
+            if current_price > df["open"].iloc[current_index]:
+                signals.append(("buy_poc", current_index))
+            else:
+                signals.append(("sell_poc", current_index))
+
+        # Signal 2: Price breakout from value area
+        min_value_area = min(value_area_prices) if value_area_prices else current_price
+        max_value_area = max(value_area_prices) if value_area_prices else current_price
+
+        if current_price > max_value_area and volume_spike:
+            signals.append(("breakout_above_va", current_index))
+        elif current_price < min_value_area and volume_spike:
+            signals.append(("breakout_below_va", current_index))
+
+        return signals
+
+    def order_flow_imbalance(self, df: pd.DataFrame, lookback: int = 10) -> List[float]:
+        """
+        Calculate order flow imbalance using price-volume relationship
+
+        Returns:
+            List of imbalance values (-1 to +1)
+        """
+        imbalances = []
+        for i in range(lookback, len(df)):
+            recent = df.iloc[i - lookback : i]
+
+            # Calculate buying vs selling pressure
+            buy_volume = recent[recent["close"] > recent["open"]]["volume"].sum()
+            sell_volume = recent[recent["close"] < recent["open"]]["volume"].sum()
+
+            total_volume = buy_volume + sell_volume
+            if total_volume > 0:
+                imbalance = (buy_volume - sell_volume) / total_volume
+                imbalances.append(imbalance)
+            else:
+                imbalances.append(0.0)
+
+        return imbalances
+
+    def get_supply_demand_signal(self, df: pd.DataFrame, current_index: int) -> float:
+        """Generate supply/demand zone trading signal"""
+        if current_index < self.config.SUPPLY_DEMAND_LOOKBACK:
+            return 0.0
+
+        zones = self.identify_supply_demand_zones(df.iloc[:current_index])
+        current_price = df["close"].iloc[current_index]
+
+        signal = 0.0
+        for zone_type, price_level, _ in zones[-5:]:  # Check recent 5 zones
+            distance_pct = abs(current_price - price_level) / current_price
+
+            if distance_pct < 0.005:  # Within 0.5% of zone
+                if zone_type == "demand":
+                    signal = 1.0
+                else:  # supply
+                    signal = -1.0
+                break
+
+        return signal
+
+    def get_market_structure_signal(
+        self, df: pd.DataFrame, current_index: int
+    ) -> float:
+        """Generate market structure trading signal"""
+        if current_index < self.config.SWING_POINT_LENGTH * 2:
+            return 0.0
+
+        swing_highs, swing_lows = self.detect_market_structure(df.iloc[:current_index])
+        current_price = df["close"].iloc[current_index]
+
+        if len(swing_highs) < 2 or len(swing_lows) < 2:
+            return 0.0
+
+        # Check for higher highs/lows (uptrend) or lower highs/lows (downtrend)
+        latest_high = swing_highs[-1][1] if swing_highs else current_price
+        prev_high = swing_highs[-2][1] if len(swing_highs) >= 2 else latest_high
+        latest_low = swing_lows[-1][1] if swing_lows else current_price
+        prev_low = swing_lows[-2][1] if len(swing_lows) >= 2 else latest_low
+
+        if latest_high > prev_high and latest_low > prev_low:
+            return 1.0  # Uptrend
+        elif latest_high < prev_high and latest_low < prev_low:
+            return -1.0  # Downtrend
+        else:
+            return 0.0  # Range or unclear
+
+    def get_volume_spike_signal(self, df: pd.DataFrame, current_index: int) -> float:
+        """
+        ORIGINAL RULE: Volume spike trading signal
+        """
+        if current_index < 2:
+            return 0.0
+
+        signals = self.volume_spike_analysis(df.iloc[:current_index])
+        if not signals:
+            return 0.0
+
+        recent_signals = [s for s in signals if s[1] >= current_index - 5]
+        if not recent_signals:
+            return 0.0
+
+        latest_signal_type, _ = recent_signals[-1]
+        return 1.0 if latest_signal_type == "buy_acceptance" else -1.0
+
+    def get_volume_distribution_signal(
+        self, df: pd.DataFrame, current_index: int
+    ) -> float:
+        """
+        NEW RULE: Volume distribution trading signal
+        """
+        if current_index < self.config.VOLUME_PROFILE_LOOKBACK:
+            return 0.0
+
+        signals = self.volume_distribution_analysis(df, current_index)
+        if not signals:
+            return 0.0
+
+        latest_signal_type, _ = signals[-1]
+
+        if latest_signal_type in ["buy_poc", "breakout_above_va"]:
+            return 1.0
+        elif latest_signal_type in ["sell_poc", "breakout_below_va"]:
+            return -1.0
+        else:
+            return 0.0
+
+    def get_order_flow_signal(self, df: pd.DataFrame, current_index: int) -> float:
+        """Generate order flow imbalance trading signal"""
+        if current_index < self.config.ORDER_FLOW_LOOKBACK:
+            return 0.0
+
+        imbalances = self.order_flow_imbalance(
+            df.iloc[:current_index], self.config.ORDER_FLOW_LOOKBACK
+        )
+        if not imbalances:
+            return 0.0
+
+        current_imbalance = imbalances[-1]
+
+        # Convert imbalance to trading signal
+        if current_imbalance > 0.3:
+            return 1.0  # Strong buying pressure
+        elif current_imbalance < -0.3:
+            return -1.0  # Strong selling pressure
+        else:
+            return 0.0
 
     def find_pivot_points(self, df: pd.DataFrame, window=5):
         """
@@ -133,7 +461,7 @@ class PriceAction:
         ]
 
         support, resistance, level_signal = self.calculate_support_resistance(
-            recent_data, lookback_period=self.config.SUPPORT_RESISTANCE_LOOKBACK
+            recent_data, self.config.SUPPORT_RESISTANCE_LOOKBACK
         )
 
         if support is None or resistance is None:
@@ -174,8 +502,13 @@ class RuleEngine:
             # "ma": self.ma_crossover_signal,
             "bb": self.bollinger_bands_signal,
             "ema": self.ema_crossover_signal,
-            # "rsi_ma": self.rsi_ma_momentum_signal,
+            "rsi_ma": self.rsi_ma_momentum_signal,
             # "price_action": self.price_action_signal,
+            # "supply_demand": self.supply_demand_signal,
+            # "market_structure": self.market_structure_signal,
+            # "volume_spike": self.volume_spike_signal,  # ORIGINAL
+            # "volume_distribution": self.volume_distribution_signal,  # NEW
+            # "order_flow": self.order_flow_signal
         }
 
     def get_rules(self):
@@ -362,3 +695,47 @@ class RuleEngine:
                 df[f"signal_{rule}"] = 0
 
         return df
+
+    def supply_demand_signal(self, df: pd.DataFrame) -> List[float]:
+        """Generate supply/demand zone signals"""
+        signals = []
+        for i in range(len(df)):
+            signal = self.price_action.get_supply_demand_signal(df, i)
+            signals.append(signal)
+        return signals
+
+    def market_structure_signal(self, df: pd.DataFrame) -> List[float]:
+        """Generate market structure signals"""
+        signals = []
+        for i in range(len(df)):
+            signal = self.price_action.get_market_structure_signal(df, i)
+            signals.append(signal)
+        return signals
+
+    def volume_spike_signal(self, df: pd.DataFrame) -> List[float]:
+        """
+        ORIGINAL RULE: Volume spike signals for breakout confirmation
+        """
+        signals = []
+        for i in range(len(df)):
+            signal = self.price_action.get_volume_spike_signal(df, i)
+            signals.append(signal)
+        return signals
+
+    def volume_distribution_signal(self, df: pd.DataFrame) -> List[float]:
+        """
+        NEW RULE: Volume distribution signals using profile concepts
+        """
+        signals = []
+        for i in range(len(df)):
+            signal = self.price_action.get_volume_distribution_signal(df, i)
+            signals.append(signal)
+        return signals
+
+    def order_flow_signal(self, df: pd.DataFrame) -> List[float]:
+        """Generate order flow imbalance signals"""
+        signals = []
+        for i in range(len(df)):
+            signal = self.price_action.get_order_flow_signal(df, i)
+            signals.append(signal)
+        return signals

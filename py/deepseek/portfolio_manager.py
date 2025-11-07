@@ -67,6 +67,13 @@ class PortfolioManager:
         self.signal_filter = SignalFilter(config)
         self.consecutive_signals = []
 
+        # Threshold parameters
+        self.base_threshold = config.BASE_THRESHOLD
+        self.min_threshold = config.MIN_THRESHOLD
+        self.max_threshold = config.MAX_THRESHOLD
+        self.method = config.THRESHOLD_METHOD
+        self.recent_composite_signals = []
+
     def update_portfolio(self, decision, price, date):
         """Update portfolio based on trading decision"""
         # Simple implementation - in practice you'd add position sizing, risk management, etc.
@@ -104,15 +111,53 @@ class PortfolioManager:
 
         return composite
 
+    def count_active_rules(self, weights: dict, min_weight=0.05):
+        """Count rules with significant weight"""
+        return sum(1 for weight in weights.values() if weight >= min_weight)
+
+    def calculate_market_volatility(self, df: pd.DataFrame, current_index, lookback=10):
+        """Calculate recent price volatility"""
+        if current_index < lookback:
+            return 0
+
+        recent_prices = df["close"].iloc[current_index - lookback : current_index]
+        returns = recent_prices.pct_change().dropna()
+        return returns.std()
+
     def generate_trading_decision(
-        self, composite_signal, buy_threshold=0.3, sell_threshold=-0.3
+        self, composite_signal, weights, df: pd.DataFrame, current_index
     ):
-        if composite_signal > buy_threshold:
-            return "BUY", composite_signal
-        elif composite_signal < sell_threshold:
-            return "SELL", composite_signal
+        """Generate trading decision with adaptive threshold"""
+        if self.method == "fixed":
+            threshold = self.base_threshold
+        elif self.method == "adaptive":
+            # Adjust based on number of active rules
+            active_rules = self.count_active_rules(weights)
+            threshold = self.base_threshold * (
+                active_rules / 3.0
+            )  # Normalize to original 3 rules
+            threshold = max(self.min_threshold, min(self.max_threshold, threshold))
+        elif self.method == "volatility":
+            # Adjust based on market volatility
+            volatility = self.calculate_market_volatility(df, current_index)
+            threshold = self.base_threshold * (
+                1 + volatility * 10
+            )  # Scale volatility effect
+            threshold = max(self.min_threshold, min(self.max_threshold, threshold))
         else:
-            return "HOLD", composite_signal
+            threshold = self.base_threshold
+
+        # Store for tracking
+        self.recent_composite_signals.append(composite_signal)
+        if len(self.recent_composite_signals) > 50:
+            self.recent_composite_signals.pop(0)
+
+        if composite_signal > threshold:
+            return "BUY", composite_signal, threshold
+        elif composite_signal < -threshold:
+            return "SELL", composite_signal, threshold
+        else:
+            return "HOLD", composite_signal, threshold
 
     def update_signal_history(self, composite_signal):
         """Keep track of recent signals for confirmation"""

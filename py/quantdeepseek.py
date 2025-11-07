@@ -52,12 +52,13 @@ class QuantitativeTradingSystem:
 
     def prepare_data(self):
         """Prepare all indicator data"""
+        print(
+            f"\n=== AVAILABLE RULES ===\n-> {", ".join(self.rule_engine.get_rules())}"
+        )
         df = self.data_loader.get_data()
         df_with_indicators = self.indicators.calculate_all_indicators(df)
         df_with_signals = self.rule_engine.generate_all_signals(df_with_indicators)
         self.data = df_with_signals
-
-        print(f"\nAvailable rules: {", ".join(self.rule_engine.get_rules())}")
 
     def run_backtest(self, strict: bool = False) -> pd.DataFrame:
         """Run the complete adaptive trading system"""
@@ -81,8 +82,9 @@ class QuantitativeTradingSystem:
             if not strict:
                 decision = self.portfolio_manager.generate_trading_decision(
                     composite_signal=composite_signal,
-                    buy_threshold=0.4,
-                    sell_threshold=-0.4,
+                    weights=weights,
+                    df=self.data,
+                    current_index=i,
                 )
 
             if strict:

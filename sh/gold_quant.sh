@@ -3,7 +3,7 @@
 df=XAUT-USDT_15m
 interval=15m
 
-python py/bingx.py run --symbol=XAUT-USDT --interval=$interval --output=ignore/${df}.csv --chunk=3
+# python py/bingx.py run --symbol=XAUT-USDT --interval=$interval --output=ignore/${df}.csv --chunk=1
 
 # python py/quantchatgpt.py run --input=ignore/XAUT-USDT_15m.csv --output=web/dist/file/XAUT-USDT_15m_chatgpt.csv
 

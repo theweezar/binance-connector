@@ -164,6 +164,7 @@ class BingX_CLI:
 
     def run(self):
         # Create BingX instance and execute fetch
+        print(f"Start connecting BingX with symbol={self.symbol}, interval={self.interval}")
         bingx = BingXConnector()
         data = bingx.fetch_by_chunk(
             symbol=self.symbol, interval=self.interval, chunk=self.chunk
