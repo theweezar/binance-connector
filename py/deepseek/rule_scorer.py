@@ -54,12 +54,12 @@ class RuleScorer:
         self, full_data: pd.DataFrame, current_index
     ) -> Dict[str, float]:
         """Calculate weights for current point based on lookback window"""
-        if current_index < self.config.LOOKBACK_WINDOW:
+        if current_index < self.config.WINDOW_LOOKBACK:
             # Equal weights initially
             equal_weight = 1.0 / len(self.rules)
             return {rule: equal_weight for rule in self.rules}
 
-        start_idx = current_index - self.config.LOOKBACK_WINDOW
+        start_idx = current_index - self.config.WINDOW_LOOKBACK
         end_idx = current_index
 
         evaluation_data = full_data.iloc[start_idx:end_idx].copy()

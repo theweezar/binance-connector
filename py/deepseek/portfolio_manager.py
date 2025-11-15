@@ -132,7 +132,9 @@ class PortfolioManager:
             threshold = self.base_threshold
         elif self.method == "adaptive":
             # Adjust based on number of active rules
-            active_rules = self.count_active_rules(weights)
+            active_rules = self.count_active_rules(
+                weights, min_weight=self.config.ADAPTIVE_THRESHOLD
+            )
             threshold = self.base_threshold * (
                 active_rules / 3.0
             )  # Normalize to original 3 rules

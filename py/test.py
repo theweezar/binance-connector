@@ -1,3 +1,11 @@
-d = {"a": 1, "b": 2, "c": 3}
+import pandas as pd
 
-print(" | ".join([f"i={d[i]}" for i in d]))
+data = {'Value': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+df = pd.DataFrame(data)
+
+# Calculate a 3-period rolling mean
+df['Rolling_Mean'] = df['Value'].rolling(window=2).sum()
+
+df['Another'] = df['Value'] > 2 * 1.5
+
+print(df)

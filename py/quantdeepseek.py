@@ -46,9 +46,9 @@ class QuantitativeTradingSystem:
         sell_success_rate = profitable_sells / total_sells if total_sells > 0 else 0
 
         print("\n=== ANALYZE RESULTS ===")
-        print(f"Buy Signal Success Rate: {buy_success_rate:.1%}")
-        print(f"Sell Signal Success Rate: {sell_success_rate:.1%}")
-        print(f"Overall Signal Quality: {(buy_success_rate + sell_success_rate)/2:.1%}")
+        print(f"-> Buy Signal Success Rate: {buy_success_rate:.1%}")
+        print(f"-> Sell Signal Success Rate: {sell_success_rate:.1%}")
+        print(f"-> Overall Signal Quality: {(buy_success_rate + sell_success_rate)/2:.1%}\n")
 
     def prepare_data(self):
         """Prepare all indicator data"""
@@ -64,7 +64,7 @@ class QuantitativeTradingSystem:
         """Run the complete adaptive trading system"""
         results = []
 
-        for i in range(self.config.LOOKBACK_WINDOW, len(self.data)):
+        for i in range(self.config.WINDOW_LOOKBACK, len(self.data)):
             current_data = self.data.iloc[i]
 
             # SIMPLIFIED: Use the RuleEngine to get all signals

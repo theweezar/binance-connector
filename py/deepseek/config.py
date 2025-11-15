@@ -3,11 +3,11 @@ class Config:
 
     # Number of historical periods to use for rule performance evaluation and weight calculation
     # Shorter windows adapt faster but may be noisy, longer windows are more stable but slower to adapt
-    LOOKBACK_WINDOW = 90
+    WINDOW_LOOKBACK = 90
 
     # Controls how aggressively the system favors top-performing rules in weight calculation
     # Higher values = more aggressive weighting (exponential scaling factor)
-    SENSITIVITY_FACTOR = 8
+    SENSITIVITY_FACTOR = 10
 
     # === RSI INDICATOR PARAMETERS ===
 
@@ -27,15 +27,31 @@ class Config:
     # Helps identify RSI trend direction more clearly
     RSI_MA_PERIOD = 5
 
+    # RSI moving average method:
+    # 'sma' -
+    # 'ema' -
+    RSI_MA_METHOD = "ema"
+
+    RSI_CROSS_OVERBOUGHT = 70
+
+    RSI_CROSS_OVERSOLD = 30
+
+    # MACD Indicator Parameters
+    # Default: (12, 26, 9)
+    # For day trading: (5, 13, 9) or (8, 21, 5) for more sensitivity
+    MACD_FAST = 12
+    MACD_SLOW = 26
+    MACD_SIGN = 9
+
     # === MOVING AVERAGE PARAMETERS ===
 
     # Short-term Simple Moving Average period for crossover signals
     # More responsive to recent price changes
-    MA_SHORT = 5
+    MA_SHORT = 9
 
     # Long-term Simple Moving Average period for crossover signals
     # Represents longer-term trend direction
-    MA_LONG = 20
+    MA_LONG = 21
 
     # === EXPONENTIAL MOVING AVERAGE PARAMETERS ===
 
@@ -64,7 +80,7 @@ class Config:
 
     # Lookback period for identifying support/resistance levels
     # Longer periods find more significant levels but may be less relevant
-    SUPPORT_RESISTANCE_LOOKBACK = 21
+    SUPPORT_RESISTANCE_LOOKBACK = 20
 
     # Period for volume moving average calculation
     # Used to identify above/below average volume conditions
@@ -78,11 +94,11 @@ class Config:
 
     # Base threshold for composite signal to trigger trades (0.0 to 1.0)
     # Higher values = fewer but higher conviction trades
-    BASE_THRESHOLD = 0.4
+    BASE_THRESHOLD = 0.25
 
     # Minimum allowed threshold regardless of adaptive calculations
     # Prevents system from becoming too sensitive
-    MIN_THRESHOLD = 0.10
+    MIN_THRESHOLD = 0.1
 
     # Maximum allowed threshold regardless of adaptive calculations
     # Prevents system from becoming too conservative
@@ -92,7 +108,9 @@ class Config:
     # 'fixed' - uses BASE_THRESHOLD consistently
     # 'adaptive' - adjusts based on number of active rules
     # 'volatility' - adjusts based on market volatility (higher vol = higher threshold)
-    THRESHOLD_METHOD = "volatility"
+    THRESHOLD_METHOD = "fixed"
+
+    ADAPTIVE_THRESHOLD = 0.3
 
     # === PRICE ACTION PARAMETERS ===
 
