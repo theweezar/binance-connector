@@ -48,7 +48,9 @@ class QuantitativeTradingSystem:
         print("\n=== ANALYZE RESULTS ===")
         print(f"-> Buy Signal Success Rate: {buy_success_rate:.1%}")
         print(f"-> Sell Signal Success Rate: {sell_success_rate:.1%}")
-        print(f"-> Overall Signal Quality: {(buy_success_rate + sell_success_rate)/2:.1%}\n")
+        print(
+            f"-> Overall Signal Quality: {(buy_success_rate + sell_success_rate)/2:.1%}\n"
+        )
 
     def prepare_data(self):
         """Prepare all indicator data"""
@@ -60,7 +62,7 @@ class QuantitativeTradingSystem:
         df_with_signals = self.rule_engine.generate_all_signals(df_with_indicators)
         self.data = df_with_signals
 
-    def run_backtest(self, strict: bool = False) -> pd.DataFrame:
+    def run_backtest(self) -> pd.DataFrame:
         """Run the complete adaptive trading system"""
         results = []
 
@@ -73,26 +75,23 @@ class QuantitativeTradingSystem:
             # Get dynamic rule weights
             weights = self.rule_scorer.get_current_weights(self.data, i)
 
+            print(
+                f"{current_data["start"]}:"
+                + " | ".join([f"{rule}={score:.3f}" for rule, score in weights.items()])
+            )
+
             # Calculate composite signal
             composite_signal = self.portfolio_manager.calculate_composite_signal(
                 current_signals, weights
             )
 
             # Generate trading decision
-            if not strict:
-                decision = self.portfolio_manager.generate_trading_decision(
-                    composite_signal=composite_signal,
-                    weights=weights,
-                    df=self.data,
-                    current_index=i,
-                )
-
-            if strict:
-                decision = self.portfolio_manager.strict_generate_trading_decision(
-                    composite_signal=composite_signal,
-                    current_data=self.data,
-                    current_index=i,
-                )
+            decision = self.portfolio_manager.generate_trading_decision(
+                composite_signal=composite_signal,
+                weights=weights,
+                df=self.data,
+                current_index=i,
+            )
 
             # Store results
             result = {
@@ -117,21 +116,19 @@ class QuantitativeTradingSystem:
 
 
 class Quant_DeepSeek_CLI:
-    def __init__(self, input: str, output: str, strict: bool = False):
+    def __init__(self, input: str, output: str):
         self.input = input
         self.output = output
-        self.strict = True if strict or strict == "True" else False
 
     def run(self):
         # Load and process data
         df = file.get_source(self.input)
         trading_system = QuantitativeTradingSystem(df)
-        results = trading_system.run_backtest(strict=self.strict)
+        results = trading_system.run_backtest()
         trading_system.update_decision(results)
 
         # Display final results
         print("\n=== TRADING SYSTEM RESULTS ===")
-        print(f"-> Strict mode: {self.strict}")
         print(f"-> Total periods: {len(results)}")
         print(f"-> Buy signals: {len(results[results['decision'] == 'BUY'])}")
         print(f"-> Sell signals: {len(results[results['decision'] == 'SELL'])}")

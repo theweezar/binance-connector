@@ -3,13 +3,62 @@
 
 import { has } from "../utils/validators.js";
 
-function decise(row, key, buyCst, sellCst, buyRet, sellRet) {
+/**
+ * Helper function to decide return values based on cell content
+ * @param {Object} row - data row
+ * @param {string} key - key to check in the row
+ * @param {string} buyCst - value representing a buy signal
+ * @param {string} sellCst - value representing a sell signal
+ * @param {string} buyRet - return value if buy signal matches
+ * @param {string} sellRet - return value if sell signal matches
+ * @returns 
+ */
+function decide(row, key, buyCst, sellCst, buyRet, sellRet) {
   const val = row[key];
   if (val === buyCst) return buyRet;
   if (val === sellCst) return sellRet;
   return null;
 }
 
+/**
+ * Create a candlestick object from a data row
+ * @param {Object} row - data row
+ * @returns {Object} candlestick object
+ */
+function createCandleObject(row) {
+  return {
+    open: Number(row.open),
+    high: Number(row.high),
+    low: Number(row.low),
+    close: Number(row.close),
+    raw: row
+  };
+}
+
+/**
+ * Create an entry marker based on buy/sell signals
+ * @param {Object} row - data row
+ * @param {string} baseKey - key to check in the row
+ * @param {string} buyCst - value representing a buy signal
+ * @param {string} sellCst - value representing a sell signal
+ * @returns {Object|null} entry marker object or null if no marker
+ */
+function createEntryMarker(row, baseKey, buyCst, sellCst) {
+  if (!has(row, baseKey)) return null;
+  const color = decide(row, baseKey, buyCst, sellCst, "#4AFA9A", "#FF4976");
+  if (!color) return null;
+  const position = decide(row, baseKey, buyCst, sellCst, "belowBar", "aboveBar");
+  const shape = decide(row, baseKey, buyCst, sellCst, "arrowUp", "arrowDown");
+  const text = decide(row, baseKey, buyCst, sellCst, "B", "S");
+  return { position, color, shape, text };
+}
+
+/**
+ * Process chart data into structured format
+ * @param {Array} data - array of data rows
+ * @param {Object} config - configuration object
+ * @returns {Object} structured chart data
+ */
 export function processChartData(data, config) {
   const seriesObject = {
     candle: { series: [] },
@@ -28,50 +77,13 @@ export function processChartData(data, config) {
 
     // Candlestick series
     seriesObject.candle.series.push({
-      time,
-      open: Number(row.open),
-      high: Number(row.high),
-      low: Number(row.low),
-      close: Number(row.close),
-      raw: row
+      time, ...createCandleObject(row)
     });
 
-    // Marker creation
-    if (has(row, "position") || has(row, "sensitive_position")) {
-      let isLong, color;
-
-      if (has(row, "position")) {
-        isLong = Number(row.position) === 1;
-        color = isLong ? "#4AFA9A" : "#FF4976";
-      }
-      if (has(row, "sensitive_position")) {
-        isLong = Number(row.sensitive_position) === 1;
-        color = isLong ? "#FFFF00" : "#7C4DFF";
-      }
-
-      const price = isLong ? Number(row.low) : Number(row.high);
-
-      seriesObject.marker.series.push({
-        time,
-        position: isLong ? "belowBar" : "aboveBar",
-        color,
-        shape: isLong ? "arrowUp" : "arrowDown",
-        text: isLong ? `B: ${price}` : `S: ${price}`,
-      });
-    }
-
-    if (has(row, "entry_signal")) {
-      const color = decise(row, "entry_signal", "BUY", "SELL", "#4AFA9A", "#FF4976");
-      const position = decise(row, "entry_signal", "BUY", "SELL", "belowBar", "aboveBar");
-      const shape = decise(row, "entry_signal", "BUY", "SELL", "arrowUp", "arrowDown");
-      const text = decise(row, "entry_signal", "BUY", "SELL", "B", "S");
-
-      if (color !== null) {
-        seriesObject.marker.series.push({
-          time, position, color, shape, text
-        });
-      }
-    }
+    const marker = createEntryMarker(row, "entry_signal", "BUY", "SELL");
+    if (marker) seriesObject.marker.series.push({
+      time, ...marker
+    });
 
     // Moving average lines
     Object.keys(seriesObject.line).forEach(key => {

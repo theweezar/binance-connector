@@ -130,6 +130,7 @@ class PortfolioManager:
         """Generate trading decision with adaptive threshold"""
         if self.method == "fixed":
             threshold = self.base_threshold
+
         elif self.method == "adaptive":
             # Adjust based on number of active rules
             active_rules = self.count_active_rules(
@@ -139,6 +140,7 @@ class PortfolioManager:
                 active_rules / 3.0
             )  # Normalize to original 3 rules
             threshold = max(self.min_threshold, min(self.max_threshold, threshold))
+
         elif self.method == "volatility":
             # Adjust based on market volatility
             volatility = self.calculate_market_volatility(df, current_index)
@@ -146,6 +148,7 @@ class PortfolioManager:
                 1 + volatility * 10
             )  # Scale volatility effect
             threshold = max(self.min_threshold, min(self.max_threshold, threshold))
+
         else:
             threshold = self.base_threshold
 
@@ -166,48 +169,3 @@ class PortfolioManager:
         self.consecutive_signals.append(composite_signal)
         if len(self.consecutive_signals) > 5:  # Keep last 5 periods
             self.consecutive_signals.pop(0)
-
-    def strict_generate_trading_decision(
-        self,
-        composite_signal,
-        current_data,
-        current_index,
-        strict_threshold=0.4,
-        moderate_threshold=0.25,
-    ):
-        """Multi-threshold system with filters"""
-
-        # STRICT FILTERS - Only trade if all pass
-        volume_ok = self.signal_filter.volume_confirmation(
-            current_data, current_index, volume_threshold=1.1, periods=9
-        )
-        volatility_ok = self.signal_filter.volatility_filter(
-            current_data, current_index, max_volatility=0.01, periods=9
-        )
-        time_ok = self.signal_filter.time_based_filter(
-            current_data["timestamp"].iloc[current_index]
-        )
-
-        self.update_signal_history(composite_signal=composite_signal)
-
-        if not (volume_ok and volatility_ok and time_ok):
-            return "HOLD", composite_signal
-
-        # MULTI-LEVEL THRESHOLDS
-        if composite_signal > strict_threshold:
-            # Strong buy - require confirmation
-            if len(self.consecutive_signals) >= 2:
-                if all(s > moderate_threshold for s in self.consecutive_signals[-2:]):
-                    return "BUY", composite_signal
-
-        elif composite_signal < -strict_threshold:
-            # Strong sell - require confirmation
-            if len(self.consecutive_signals) >= 2:
-                if all(s < -moderate_threshold for s in self.consecutive_signals[-2:]):
-                    return "SELL", composite_signal
-
-        elif abs(composite_signal) > moderate_threshold:
-            # Moderate signal - wait for confirmation
-            pass
-
-        return "HOLD", composite_signal

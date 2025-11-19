@@ -26,8 +26,8 @@ export function createTooltip() {
 
 export function createTooltipLine(label, value, style = "") {
   return `
-        <div style="${style}">
-            <span style="font-weight: bold;">${label ? label + ":" : ""}</span> ${value}
-        </div>
+      <div style="${style}">
+          <span style="font-weight: bold;">${label ? label + ":" : ""}</span> ${value}
+      </div>
     `;
 }

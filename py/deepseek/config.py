@@ -7,7 +7,7 @@ class Config:
 
     # Controls how aggressively the system favors top-performing rules in weight calculation
     # Higher values = more aggressive weighting (exponential scaling factor)
-    SENSITIVITY_FACTOR = 10
+    SENSITIVITY_FACTOR = 15
 
     # === RSI INDICATOR PARAMETERS ===
 
@@ -25,16 +25,16 @@ class Config:
 
     # Period for moving average of RSI - smooths RSI to reduce noise and false signals
     # Helps identify RSI trend direction more clearly
-    RSI_MA_PERIOD = 5
+    RSI_MA_PERIOD = 9
 
     # RSI moving average method:
     # 'sma' -
     # 'ema' -
     RSI_MA_METHOD = "ema"
 
-    RSI_CROSS_OVERBOUGHT = 70
+    RSI_CROSS_OVERBOUGHT = 60
 
-    RSI_CROSS_OVERSOLD = 30
+    RSI_CROSS_OVERSOLD = 40
 
     # MACD Indicator Parameters
     # Default: (12, 26, 9)
@@ -47,11 +47,11 @@ class Config:
 
     # Short-term Simple Moving Average period for crossover signals
     # More responsive to recent price changes
-    MA_SHORT = 9
+    MA_SHORT = 50
 
     # Long-term Simple Moving Average period for crossover signals
     # Represents longer-term trend direction
-    MA_LONG = 21
+    MA_LONG = 200
 
     # === EXPONENTIAL MOVING AVERAGE PARAMETERS ===
 
