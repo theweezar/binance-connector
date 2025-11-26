@@ -159,6 +159,7 @@ class Quant_DeepSeek_CLI:
         trading_system.analyze_signal_quality(results)
 
         file.write_dataframe(trading_system.data, self.output)
+        return trading_system.data
 
     def run_specific_config(self):
         config = DynamicConfig(self.config)
@@ -183,7 +184,7 @@ class Quant_DeepSeek_CLI:
         results = trading_system.run_backtest()
         trading_system.update_decision(results)
         file.write_dataframe(trading_system.data, self.output)
-        print("\nBacktest with specific configuration...successfully.")
+        return trading_system.data
 
 
 # Example usage

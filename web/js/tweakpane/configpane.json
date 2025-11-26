@@ -147,6 +147,32 @@
     ]
   },
   {
+    "folder": "Volume",
+    "params": [
+      {
+        "label": "VOLUME_MA_PERIOD",
+        "value": 20
+      },
+      {
+        "label": "MIN_VOLUME_STRENGTH",
+        "value": 1.1
+      },
+      {
+        "label": "VOLUME_SPIKE_THRESHOLD",
+        "value": 1.5
+      }
+    ]
+  },
+  {
+    "folder": "Volume Profile",
+    "params": [
+      {
+        "label": "VOLUME_PROFILE_LOOKBACK",
+        "value": 50
+      }
+    ]
+  },
+  {
     "folder": "Others",
     "params": [
       {
@@ -156,14 +182,6 @@
       {
         "label": "SUPPORT_RESISTANCE_LOOKBACK",
         "value": 20
-      },
-      {
-        "label": "VOLUME_MA_PERIOD",
-        "value": 20
-      },
-      {
-        "label": "MIN_VOLUME_STRENGTH",
-        "value": 1.1
       }
     ]
   },
@@ -181,14 +199,6 @@
       {
         "label": "SWING_POINT_LENGTH",
         "value": 5
-      },
-      {
-        "label": "VOLUME_PROFILE_LOOKBACK",
-        "value": 50
-      },
-      {
-        "label": "VOLUME_SPIKE_THRESHOLD",
-        "value": 1.5
       },
       {
         "label": "ORDER_FLOW_LOOKBACK",

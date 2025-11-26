@@ -4,6 +4,7 @@ import hashlib
 import json
 from html import escape
 from py.quantdeepseek import Quant_DeepSeek_CLI
+from py.bingx import BingX_CLI
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCE_DIR = os.path.join(BASE_DIR, "ignore")
@@ -90,14 +91,28 @@ def index():
 def fetch_handler():
     try:
         source = request.args.get("source", "")
-        rules = json_safe_load(request.args.get("rules", ""))
-        config = json_safe_load(request.args.get("config", ""))
-        _input = os.path.join(SOURCE_DIR, source)
-        _output = os.path.join(FILES_ROOT, source)
-        quant = Quant_DeepSeek_CLI(
-            input=_input, output=_output, config=config, allowed_rules=rules
-        )
-        quant.run_specific_config()
+        symbol = request.args.get("symbol", "")
+        interval = request.args.get("interval", "")
+        source_path = os.path.join(SOURCE_DIR, source)
+        backtest_output = os.path.join(FILES_ROOT, source)
+
+        if symbol and interval:
+            bingx = BingX_CLI(symbol=symbol, interval=interval, output=source_path)
+            bingx.run()
+
+        rules = request.args.get("rules", "")
+        config = request.args.get("config", "")
+
+        if rules and config:
+            rules = json_safe_load(rules)
+            config = json_safe_load(config)
+            quant = Quant_DeepSeek_CLI(
+                input=source_path,
+                output=backtest_output,
+                config=config,
+                allowed_rules=rules,
+            )
+            quant.run_specific_config()
         return jsonify(success=True)
     except Exception as e:
         print(f"An unexpected error occurred: {e}")

@@ -30,7 +30,7 @@
   </style>
 </head>
 
-<body class="d-flex flex-column min-vh-100 p-0 m-0">
+<body class="d-flex flex-column min-vh-100 p-0 m-0 bg-dark" data-bs-theme="dark">
 
   <div class="flex-grow-1 d-flex">
     <div class="row w-100 gx-0">
@@ -40,10 +40,10 @@
           <!-- Nav tabs -->
           <ul class="nav nav-tabs border-bottom" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-              <button class="nav-link text-dark active" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
+              <button class="nav-link  active" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link text-dark" id="dataset-tab" data-bs-toggle="tab" data-bs-target="#dataset" type="button" role="tab" aria-controls="dataset" aria-selected="true">Dataset</button>
+              <button class="nav-link " id="dataset-tab" data-bs-toggle="tab" data-bs-target="#dataset" type="button" role="tab" aria-controls="dataset" aria-selected="true">Dataset</button>
             </li>
           </ul>
 
@@ -63,7 +63,7 @@
 
             <div id="dataset" class="tab-pane" role="tabpanel">
               <div class="small text-muted mb-2">Files</div>
-              <div id="dataset-tree" class="overflow-auto" style="max-height: calc(100vh - 140px);">
+              <div id="dataset-tree" class="overflow-auto">
                 {{ file_tree|safe }}
               </div>
             </div>
@@ -74,8 +74,8 @@
       <!-- Right column: 75% -->
       <div class="col-9" id="right-col">
         <div class="d-flex flex-column min-vh-100">
-          <div>
-            <div id="chartTitle" class="small bg-light p-2 border-bottom m-0">N/A</div>
+          <div class="border-start border-top border-end" style="border-color: transparent !important;">
+            <div id="chartTitle" class="small p-2 border-bottom m-0">N/A</div>
           </div>
           <div id="chartContainer" class="flex-grow-1"> </div>
         </div>

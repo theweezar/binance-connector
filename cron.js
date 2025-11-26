@@ -5,12 +5,10 @@ const { DateTime } = require("luxon");
 const shell = require("shelljs");
 
 const job = new CronJob(
-  "0 */5 * * * *", // Run every 5 minutes
+  "0 */1 * * * *", // Run every 1 minutes
   () => {
     console.log(DateTime.local(), "=> Running...");
-    shell.exec("node ./js/fetch.js -p \"ignore\" -s \"BTC\" -i \"1m\" -f 1 -D");
-    shell.exec("python ./py/processor.py ./ignore");
-    shell.exec("node ./js/robot.js");
+    shell.exec("python -m py.cron run --symbol=BTC-USDT --interval=1m");
   },
   null,
   true,
