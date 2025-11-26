@@ -1,0 +1,207 @@
+[
+  {
+    "folder": "Signal Settings",
+    "params": [
+      {
+        "label": "WINDOW_LOOKBACK",
+        "value": 90
+      },
+      {
+        "label": "SENSITIVITY_FACTOR",
+        "value": 15
+      },
+      {
+        "label": "BASE_THRESHOLD",
+        "value": 0.25
+      },
+      {
+        "label": "MIN_THRESHOLD",
+        "value": 0.1
+      },
+      {
+        "label": "MAX_THRESHOLD",
+        "value": 0.4
+      },
+      {
+        "label": "THRESHOLD_METHOD",
+        "value": "fixed"
+      },
+      {
+        "label": "ADAPTIVE_THRESHOLD",
+        "value": 0.3
+      }
+    ]
+  },
+  {
+    "folder": "ADX",
+    "params": [
+      {
+        "label": "ADX_PERIOD",
+        "value": 9
+      },
+      {
+        "label": "ADX_STRONG_TREND",
+        "value": 40
+      },
+      {
+        "label": "ADX_WEAK_TREND",
+        "value": 25
+      },
+      {
+        "label": "ADX_RISING_THRESHOLD",
+        "value": 40
+      },
+      {
+        "label": "ADX_FALLING_THRESHOLD",
+        "value": 25
+      }
+    ]
+  },
+  {
+    "folder": "RSI",
+    "params": [
+      {
+        "label": "RSI_PERIOD",
+        "value": 9
+      },
+      {
+        "label": "RSI_OVERBOUGHT",
+        "value": 75
+      },
+      {
+        "label": "RSI_OVERSOLD",
+        "value": 25
+      },
+      {
+        "label": "RSI_MA_PERIOD",
+        "value": 9
+      },
+      {
+        "label": "RSI_MA_METHOD",
+        "value": "ema"
+      },
+      {
+        "label": "RSI_CROSS_OVERBOUGHT",
+        "value": 60
+      },
+      {
+        "label": "RSI_CROSS_OVERSOLD",
+        "value": 40
+      }
+    ]
+  },
+  {
+    "folder": "MACD",
+    "params": [
+      {
+        "label": "MACD_FAST",
+        "value": 12
+      },
+      {
+        "label": "MACD_SLOW",
+        "value": 26
+      },
+      {
+        "label": "MACD_SIGN",
+        "value": 9
+      }
+    ]
+  },
+  {
+    "folder": "MA",
+    "params": [
+      {
+        "label": "MA_SHORT",
+        "value": 50
+      },
+      {
+        "label": "MA_LONG",
+        "value": 200
+      }
+    ]
+  },
+  {
+    "folder": "EMA",
+    "params": [
+      {
+        "label": "EMA_SHORT",
+        "value": 9
+      },
+      {
+        "label": "EMA_LONG",
+        "value": 21
+      }
+    ]
+  },
+  {
+    "folder": "BOLL",
+    "params": [
+      {
+        "label": "BB_PERIOD",
+        "value": 20
+      },
+      {
+        "label": "BB_STD",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "folder": "Others",
+    "params": [
+      {
+        "label": "INITIAL_CAPITAL",
+        "value": 100000
+      },
+      {
+        "label": "SUPPORT_RESISTANCE_LOOKBACK",
+        "value": 20
+      },
+      {
+        "label": "VOLUME_MA_PERIOD",
+        "value": 20
+      },
+      {
+        "label": "MIN_VOLUME_STRENGTH",
+        "value": 1.1
+      }
+    ]
+  },
+  {
+    "folder": "Price Action",
+    "params": [
+      {
+        "label": "SUPPLY_DEMAND_LOOKBACK",
+        "value": 20
+      },
+      {
+        "label": "SUPPLY_DEMAND_MIN_STRENGTH",
+        "value": 2.0
+      },
+      {
+        "label": "SWING_POINT_LENGTH",
+        "value": 5
+      },
+      {
+        "label": "VOLUME_PROFILE_LOOKBACK",
+        "value": 50
+      },
+      {
+        "label": "VOLUME_SPIKE_THRESHOLD",
+        "value": 1.5
+      },
+      {
+        "label": "ORDER_FLOW_LOOKBACK",
+        "value": 10
+      },
+      {
+        "label": "REJECTION_MIN_WICK_RATIO",
+        "value": 2.0
+      },
+      {
+        "label": "ATR_PERIOD",
+        "value": 14
+      }
+    ]
+  }
+]

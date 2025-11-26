@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quant Chart</title>
+  <script src="./dist/resources/globalConfig.js"></script>
+  <script defer src="./dist/resources/bootstrap.js"></script>
+  <script defer src="./dist/resources/main.js"></script>
+  <link rel="stylesheet" href="./dist/resources/main.css">
+
+  <!-- Inline Bootstrap CSS (local) -->
+  <style>
+    /* Extra small tweaks for layout */
+    #chart-container {
+      min-height: 100%;
+      border-left: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .nav-tabs .nav-link {
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .toggle-folder {
+      padding: 0 .25rem;
+      line-height: 1;
+    }
+  </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100 p-0 m-0">
+
+  <div class="flex-grow-1 d-flex">
+    <div class="row w-100 gx-0">
+      <!-- Left column: 25% -->
+      <div class="col-3 border-end" style="min-height:100%;">
+        <div>
+          <!-- Nav tabs -->
+          <ul class="nav nav-tabs border-bottom" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link text-dark active" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link text-dark" id="dataset-tab" data-bs-toggle="tab" data-bs-target="#dataset" type="button" role="tab" aria-controls="dataset" aria-selected="true">Dataset</button>
+            </li>
+          </ul>
+
+          <!-- Tab panes -->
+          <div class="tab-content">
+            <div id="settings" class="tab-pane active" role="tabpanel">
+              <div id="action-container" class="m-1">
+                <!-- Empty container as requested -->
+              </div>
+              <div id="rulepane-container" class="m-1">
+                <!-- Empty container as requested -->
+              </div>
+              <div id="tweakpane-container" class="m-1">
+                <!-- Empty container as requested -->
+              </div>
+            </div>
+
+            <div id="dataset" class="tab-pane" role="tabpanel">
+              <div class="small text-muted mb-2">Files</div>
+              <div id="dataset-tree" class="overflow-auto" style="max-height: calc(100vh - 140px);">
+                {{ file_tree|safe }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: 75% -->
+      <div class="col-9" id="right-col">
+        <div class="d-flex flex-column min-vh-100">
+          <div>
+            <div id="chartTitle" class="small bg-light p-2 border-bottom m-0">N/A</div>
+          </div>
+          <div id="chartContainer" class="flex-grow-1"> </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minimal JS to handle tab switching and folder toggles (no Bootstrap JS required) -->
+  <script>
+    (function() {
+      // Folder toggles
+      document.body.addEventListener('click', function(e) {
+        var t = e.target;
+        if (t.classList.contains('toggle-folder')) {
+          e.preventDefault();
+          var target = document.querySelector(t.getAttribute('data-target'));
+          if (!target) return;
+          var isHidden = (target.style.display === 'none' || getComputedStyle(target).display === 'none');
+          target.style.display = isHidden ? 'block' : 'none';
+          t.textContent = isHidden ? '▼' : '▶';
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>

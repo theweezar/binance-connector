@@ -36,6 +36,7 @@ def get_source(source: str) -> pandas.DataFrame:
     if not os.path.exists(source_path):
         raise FileNotFoundError(f"File not found: {source_path}")
 
+    print(f"Imported DataFrame from {source_path}")
     return pandas.read_csv(source_path, sep=",")
 
 

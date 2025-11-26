@@ -9,6 +9,19 @@ class Config:
     # Higher values = more aggressive weighting (exponential scaling factor)
     SENSITIVITY_FACTOR = 15
 
+    # === ADX INDICATOR PARAMETERS ===
+    ADX_PERIOD = 9
+
+    # ADX threshold for strong trend (typically 25-35)
+    ADX_STRONG_TREND = 40
+
+    # ADX threshold for weak trend (typically 20-25)
+    ADX_WEAK_TREND = 25
+
+    # ADX rising/falling threshold for signal generation
+    ADX_RISING_THRESHOLD = 40
+    ADX_FALLING_THRESHOLD = 25
+
     # === RSI INDICATOR PARAMETERS ===
 
     # Number of periods to calculate RSI (Relative Strength Index)
@@ -141,3 +154,6 @@ class Config:
     # Minimum wick-to-body ratio for price rejection patterns
     # Identifies significant pin bars and rejection candles
     REJECTION_MIN_WICK_RATIO = 2.0
+
+    # Period for ATR calculation (normalization)
+    ATR_PERIOD = 14

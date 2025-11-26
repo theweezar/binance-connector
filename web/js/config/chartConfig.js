@@ -4,7 +4,7 @@
 import { CrosshairMode } from "lightweight-charts";
 import { parseFixed } from "../utils/validators.js";
 
-export function getChartOptions({ fractionDigits }) {
+export function getChartOptions() {
   return {
     layout: {
       background: { color: "#1e1e1e" },
@@ -16,7 +16,8 @@ export function getChartOptions({ fractionDigits }) {
     },
     crosshair: { mode: CrosshairMode.Normal },
     localization: {
-      priceFormatter: price => `${parseFixed(price, fractionDigits)}$`,
+      priceFormatter: price => `${parseFixed(price, 2)}$`,
+      locale: "en-US"
     },
     timeScale: {
       timeVisible: true,

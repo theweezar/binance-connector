@@ -12,16 +12,26 @@ class RuleEngine:
         # Map rule names to their corresponding signal methods
         self.rule_methods = {
             "rsi": self.momentum_rsi_signal,
-            # "ma": self.ma_crossover_signal,
-            # "bb": self.bollinger_bands_signal,
+            "ma": self.ma_crossover_signal,
+            "bb": self.bollinger_bands_signal,
             "ema": self.ema_crossover_signal,
             "rsi_ma": self.rsi_ma_momentum_signal,
-            # "macd": self.macd_signal,
+            "macd": self.macd_signal,
             # "market_structure": self.market_structure_signal,
             # "volume_spike": self._precompute_volume_spike_signals,
             # "volume_distribution": self.volume_distribution_signal,
             # "order_flow": self._precompute_order_flow_imbalance,
+            "divergent": self.divergent_rsi_adx_signal,
         }
+
+    def update_allowed_rules(self, allowed_rules: list = None):
+        if not allowed_rules or len(allowed_rules) == 0:
+            return
+
+        all_rules = list(self.get_rules())
+        for rule in all_rules:
+            if rule not in allowed_rules:
+                self.rule_methods.pop(rule)
 
     def get_rules(self):
         return self.rule_methods.keys()
@@ -215,7 +225,7 @@ class RuleEngine:
         temp_df = df.copy()
         rules = self.get_rules()
         # Calculate signals for each rule
-        print("\n=== BENCHMARKING ===")
+        # print("\n=== BENCHMARKING ===")
         for rule in rules:
             signal_column = f"signal_{rule}"
             if rule in self.rule_methods:
@@ -224,9 +234,9 @@ class RuleEngine:
                 df[signal_column] = method(temp_df)
                 end_time = time.perf_counter()
                 execution_time = end_time - start_time
-                print(
-                    f"-> Function '{method.__name__}' took {execution_time:.4f} seconds to execute."
-                )
+                # print(
+                #     f"-> Function '{method.__name__}' took {execution_time:.4f} seconds to execute."
+                # )
             else:
                 print(f"Warning: No method found for rule '{rule}'")
                 df[signal_column] = 0
@@ -300,3 +310,50 @@ class RuleEngine:
         signal = df["signal_order_flow"].to_list()
 
         return signal
+
+    def divergent_rsi_adx_signal(self, df: pd.DataFrame):
+        # Initialize signal column with zeros
+        signals = pd.Series(0, index=df.index)
+
+        # Skip if required columns are not available
+        if "adx" not in df.columns or "rsi" not in df.columns:
+            return signals.tolist()
+
+        # Calculate previous values for trend detection
+        df["prev_adx"] = df["adx"].shift(1)
+        df["prev_rsi"] = df["rsi"].shift(1)
+
+        # Create masks for BUY conditions
+        # ADX rising above threshold (developing uptrend) AND RSI rising above oversold
+        buy_condition_mask = (
+            (df["adx"] > self.config.ADX_RISING_THRESHOLD)  # ADX above threshold
+            & (
+                df["prev_adx"] <= self.config.ADX_RISING_THRESHOLD
+            )  # ADX was below/at threshold
+            & (df["adx"] > df["prev_adx"])  # ADX is rising
+            & (df["rsi"] > self.config.RSI_OVERSOLD)  # RSI above oversold
+            & (df["prev_rsi"] <= self.config.RSI_OVERSOLD)  # RSI was oversold
+            & (df["rsi"] > df["prev_rsi"])  # RSI is rising
+        )
+
+        # Create masks for SELL conditions
+        # ADX dropping below threshold (trend weakening) AND RSI dropping below overbought
+        sell_condition_mask = (
+            (df["adx"] < self.config.ADX_FALLING_THRESHOLD)  # ADX below threshold
+            & (
+                df["prev_adx"] >= self.config.ADX_FALLING_THRESHOLD
+            )  # ADX was above/at threshold
+            & (df["adx"] < df["prev_adx"])  # ADX is falling
+            & (df["rsi"] < self.config.RSI_OVERBOUGHT)  # RSI below overbought
+            & (df["prev_rsi"] >= self.config.RSI_OVERBOUGHT)  # RSI was overbought
+            & (df["rsi"] < df["prev_rsi"])  # RSI is falling
+        )
+
+        # Apply signals using .loc
+        signals.loc[buy_condition_mask] = 1
+        signals.loc[sell_condition_mask] = -1
+
+        # Clean up temporary columns
+        df.drop(["prev_adx", "prev_rsi"], axis=1, inplace=True, errors="ignore")
+
+        return signals.tolist()

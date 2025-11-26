@@ -1,5 +1,6 @@
 /node_modules
 /ignore
+/__pycache__
 /py/**/__pycache__
 /web/dist/file
 /web/dist/resources

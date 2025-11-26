@@ -1,20 +1,24 @@
 import pandas as pd
-from deepseek.config import Config
-from deepseek.data_loader import DataLoader
-from deepseek.indicators import Indicators
-from deepseek.rule_engine import RuleEngine
-from deepseek.rule_scorer import RuleScorer
-from deepseek.portfolio_manager import PortfolioManager
-from util import file
+from .deepseek.config import Config
+from .deepseek.data_loader import DataLoader
+from .deepseek.indicators import Indicators
+from .deepseek.rule_engine import RuleEngine
+from .deepseek.rule_scorer import RuleScorer
+from .deepseek.portfolio_manager import PortfolioManager
+from .deepseek.dynamic_config import DynamicConfig
+from .util import file
 from fire import Fire
 
 
 class QuantitativeTradingSystem:
-    def __init__(self, df):
-        self.config = Config()
+    def __init__(self, df, config=None, allowed_rules: list = None):
+        self.config = config if config else Config()
         self.data_loader = DataLoader(df)
         self.indicators = Indicators(self.config)
         self.rule_engine = RuleEngine(self.config)
+
+        self.rule_engine.update_allowed_rules(allowed_rules)
+
         self.rule_scorer = RuleScorer(self.config, self.rule_engine.get_rules())
         self.portfolio_manager = PortfolioManager(self.config)
 
@@ -52,11 +56,31 @@ class QuantitativeTradingSystem:
             f"-> Overall Signal Quality: {(buy_success_rate + sell_success_rate)/2:.1%}\n"
         )
 
-    def prepare_data(self):
-        """Prepare all indicator data"""
+    def print_summary(self, results: pd.DataFrame):
         print(
             f"\n=== AVAILABLE RULES ===\n-> {", ".join(self.rule_engine.get_rules())}"
         )
+
+        # Display final results
+        print("\n=== TRADING SYSTEM RESULTS ===")
+        print(f"-> Total periods: {len(results)}")
+        print(f"-> Buy signals: {len(results[results['decision'] == 'BUY'])}")
+        print(f"-> Sell signals: {len(results[results['decision'] == 'SELL'])}")
+        print(f"-> Hold signals: {len(results[results['decision'] == 'HOLD'])}")
+
+        # Show latest weights and signals
+        latest = results.iloc[-1]
+        latest_weights = latest["weights"]
+        print(f"\n=== LATEST SIGNALS (DATE: {latest['date']}) ===")
+        print(
+            f"-> Rule Weights - RSI: {" | ".join([f"{i}={latest_weights[i]:.3f}" for i in latest_weights])}"
+        )
+        print(
+            f"-> Composite Signal: {latest['composite_signal']:.3f} -> {latest['decision']}"
+        )
+
+    def prepare_data(self):
+        """Prepare all indicator data"""
         df = self.data_loader.get_data()
         df_with_indicators = self.indicators.calculate_all_indicators(df)
         df_with_signals = self.rule_engine.generate_all_signals(df_with_indicators)
@@ -75,10 +99,10 @@ class QuantitativeTradingSystem:
             # Get dynamic rule weights
             weights = self.rule_scorer.get_current_weights(self.data, i)
 
-            print(
-                f"{current_data["start"]}:"
-                + " | ".join([f"{rule}={score:.3f}" for rule, score in weights.items()])
-            )
+            # print(
+            #     f"{current_data["start"]}:"
+            #     + " | ".join([f"{rule}={score:.3f}" for rule, score in weights.items()])
+            # )
 
             # Calculate composite signal
             composite_signal = self.portfolio_manager.calculate_composite_signal(
@@ -116,9 +140,13 @@ class QuantitativeTradingSystem:
 
 
 class Quant_DeepSeek_CLI:
-    def __init__(self, input: str, output: str):
+    def __init__(
+        self, input: str, output: str, config: dict = None, allowed_rules: dict = None
+    ):
         self.input = input
         self.output = output
+        self.config = config
+        self.allowed_rules = allowed_rules
 
     def run(self):
         # Load and process data
@@ -127,27 +155,35 @@ class Quant_DeepSeek_CLI:
         results = trading_system.run_backtest()
         trading_system.update_decision(results)
 
-        # Display final results
-        print("\n=== TRADING SYSTEM RESULTS ===")
-        print(f"-> Total periods: {len(results)}")
-        print(f"-> Buy signals: {len(results[results['decision'] == 'BUY'])}")
-        print(f"-> Sell signals: {len(results[results['decision'] == 'SELL'])}")
-        print(f"-> Hold signals: {len(results[results['decision'] == 'HOLD'])}")
-
-        # Show latest weights and signals
-        latest = results.iloc[-1]
-        latest_weights = latest["weights"]
-        print(f"\n=== LATEST SIGNALS (DATE: {latest['date']}) ===")
-        print(
-            f"-> Rule Weights - RSI: {" | ".join([f"{i}={latest_weights[i]:.3f}" for i in latest_weights])}"
-        )
-        print(
-            f"-> Composite Signal: {latest['composite_signal']:.3f} -> {latest['decision']}"
-        )
-
+        trading_system.print_summary(results)
         trading_system.analyze_signal_quality(results)
 
         file.write_dataframe(trading_system.data, self.output)
+
+    def run_specific_config(self):
+        config = DynamicConfig(self.config)
+        df = file.get_source(self.input)
+
+        # Filter enabled rules, then get their name.
+        allowed_rules = list(
+            map(
+                lambda tup: tup[0],
+                list(
+                    filter(
+                        lambda tup: tup[1] == "true" or tup[1] is True,
+                        list(self.allowed_rules.items()),
+                    )
+                ),
+            )
+        )
+
+        trading_system = QuantitativeTradingSystem(
+            df, config=config, allowed_rules=allowed_rules
+        )
+        results = trading_system.run_backtest()
+        trading_system.update_decision(results)
+        file.write_dataframe(trading_system.data, self.output)
+        print("\nBacktest with specific configuration...successfully.")
 
 
 # Example usage

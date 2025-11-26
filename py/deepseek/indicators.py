@@ -3,6 +3,7 @@ import ta.momentum
 import ta.trend
 import ta.volatility
 import pandas as pd
+import numpy as np
 
 
 class Indicators:
@@ -21,6 +22,7 @@ class Indicators:
         df = self._calculate_rsi_ma(df)
         df = self._calculate_price_action_indicators(df)
         df = self._calculate_macd(df)
+        # df = self._calculate_cmo_indicators(df)
 
         return df
 
@@ -46,6 +48,19 @@ class Indicators:
         df["bb_upper"] = bb.bollinger_hband()
         df["bb_lower"] = bb.bollinger_lband()
         df["bb_middle"] = bb.bollinger_mavg()
+
+        # Average Directional Index
+        adx = ta.trend.ADXIndicator(
+            df["high"], df["low"], df["close"], window=self.config.ADX_PERIOD
+        )
+        df["adx"] = adx.adx()
+        df["+di"] = adx.adx_pos()
+        df["-di"] = adx.adx_neg()
+
+        # Average True Range
+        df["atr"] = ta.volatility.AverageTrueRange(
+            df["high"], df["low"], df["close"], window=self.config.ATR_PERIOD
+        ).average_true_range()
 
         return df
 
@@ -106,8 +121,15 @@ class Indicators:
         df["volume_ma"] = (
             df["volume"].rolling(window=self.config.VOLUME_MA_PERIOD).mean()
         )
-
         # Volume strength
         df["volume_strength"] = df["volume"] / df["volume_ma"]
+        return df
+
+    def _calculate_cmo_indicators(self, df: pd.DataFrame):
+        """Calculate Cyclical Momentum Oscillator indicators"""
+
+        # Calculate phase angle in radians, then convert to degrees
+        df["cmo_phase_rad"] = np.arctan2(df["rsi"], df["adx"])
+        df["cmo_phase_deg"] = np.degrees(df["cmo_phase_rad"]) % 360
 
         return df

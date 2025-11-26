@@ -31,3 +31,25 @@ export function createTooltipLine(label, value, style = "") {
       </div>
     `;
 }
+
+export function createPaneTooltip() {
+  const toolTip = document.createElement("div");
+  Object.assign(toolTip.style, {
+    width: "auto",
+    height: "auto",
+    position: "absolute",
+    display: "block",
+    padding: "4px",
+    boxSizing: "border-box",
+    fontSize: "11px",
+    textAlign: "left",
+    zIndex: "1000",
+    top: "2px",
+    left: "2px",
+    pointerEvents: "none",
+    border: "1px solid rgba(38, 166, 154, 1)",
+    background: "white",
+    color: "black",
+  });
+  return toolTip;
+}

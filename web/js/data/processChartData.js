@@ -64,18 +64,27 @@ export function processChartData(data, config) {
     candle: { series: [] },
     marker: { series: [] },
     line: {},
-    rawMapping: {}
+    rawMapping: {},
+    pane: {}
   };
 
-  Object.keys(config.LineSeries).forEach(key => {
-    seriesObject.line[key] = [];
-  });
+  const lineSeriesCfg = config.LineSeries;
+  if (Array.isArray(lineSeriesCfg)) {
+    for (const [index, group] of lineSeriesCfg.entries()) {
+      for (const [series, options] of Object.entries(group)) {
+        seriesObject.line[series] = {
+          series: [],
+          index,
+          options
+        };
+      }
+    }
+  }
 
   data.forEach(row => {
     const date = new Date(row.start);
     const time = date.getTime();
 
-    // Candlestick series
     seriesObject.candle.series.push({
       time, ...createCandleObject(row)
     });
@@ -85,14 +94,8 @@ export function processChartData(data, config) {
       time, ...marker
     });
 
-    // Moving average lines
     Object.keys(seriesObject.line).forEach(key => {
-      if (has(row, key)) {
-        seriesObject.line[key].push({
-          time,
-          value: Number(row[key]),
-        });
-      }
+      if (has(row, key)) seriesObject.line[key].series.push({ time, value: Number(row[key]), });
     });
 
     seriesObject.rawMapping[time] = row;

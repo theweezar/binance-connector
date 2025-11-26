@@ -1,0 +1,42 @@
+[
+  {
+    "folder": "Rules",
+    "params": [
+      {
+        "label": "rsi",
+        "title": "RSI",
+        "value": true
+      },
+      {
+        "label": "ma",
+        "title": "MA Crossing",
+        "value": true
+      },
+      {
+        "label": "bb",
+        "title": "Bollinger Bands",
+        "value": true
+      },
+      {
+        "label": "ema",
+        "title": "EMA Crossing",
+        "value": true
+      },
+      {
+        "label": "rsi_ma",
+        "title": "RSI Crossing its MA",
+        "value": true
+      },
+      {
+        "label": "macd",
+        "title": "MACD Crossing",
+        "value": true
+      },
+      {
+        "label": "divergent",
+        "title": "Divergent RSI/ADX",
+        "value": true
+      }
+    ]
+  }
+]

@@ -1,64 +1,51 @@
-// src/chart/createChartElement.js
 "use strict";
 
-import { createChart, CandlestickSeries, createSeriesMarkers } from "lightweight-charts";
 import moment from "moment";
-import Line from "./line.js";
+import Chart from "./chart.js";
 import { processChartData } from "../data/processChartData.js";
 import { getChartOptions, candlestickOptions, defaultLineOptions } from "../config/chartConfig.js";
-import { createTooltip, createTooltipLine } from "./tooltip.js";
-import { getFractionDigits } from "../utils/validators.js";
+import { createTooltipLine, createPaneTooltip } from "./tooltip.js";
 
-export function createChartElement(data, config) {
-  const { candle, marker, line, rawMapping } = processChartData(data, config);
+export function createChartElement(data) {
+  const globalCfg = window.config;
+  const { candle, marker, line, rawMapping } = processChartData(data, globalCfg);
+  const chartOptions = getChartOptions();
+  const chart = new Chart("chartContainer", chartOptions);
 
-  const fractionDigits = getFractionDigits();
-  const chartOptions = getChartOptions({ fractionDigits });
+  chart.addSeries("main", candle.series, candlestickOptions);
 
-  const chartContainer = document.getElementById("chart-container");
-  const chart = createChart(chartContainer, chartOptions);
-  const candlestickSeries = chart.addSeries(CandlestickSeries, candlestickOptions);
-  candlestickSeries.setData(candle.series);
+  // Lines
+  for (const [key, model] of Object.entries(line)) {
+    const options = { ...defaultLineOptions, ...model.options };
+    chart.addLines(key, model.series, options);
+    chart.retrieveSeries(key).moveToPane(model.index);
 
-  // Markers
-  createSeriesMarkers(candlestickSeries, marker.series);
+    // if (model.index == 0) continue; // Skip main pane
+    // const paneEl = chart.getPaneByIndex(model.index).getHTMLElement();
+    // const paneTooltip = createPaneTooltip();
+    // paneTooltip.innerText = key;
+    // paneEl?.querySelector("td:nth-child(2)").appendChild(paneTooltip);
+    // console.log(chart.getPaneByIndex(model.index));
+  }
 
-  // Tooltip
-  const toolTip = createTooltip();
-  chartContainer.appendChild(toolTip);
+  chart.addMarkersOn("main", marker.series);
 
-  chart.subscribeCrosshairMove(param => {
-    if (!param.time || !param.point) {
-      toolTip.style.display = "none";
-      return;
-    }
-
-    const dataPoint = param.seriesData.get(candlestickSeries);
+  chart.addTooltipOn("main", (time, dataPoint) => {
     const price = dataPoint.value ?? dataPoint.close;
-    const dateStr = moment(param.time).format("YYYY-MM-DD HH:mm:ss");
-    const rawData = rawMapping[param.time] || {};
-
+    const dateStr = moment(time).format("YYYY-MM-DD HH:mm:ss");
+    const rawData = rawMapping[time] || {};
     const lines = [
       createTooltipLine("", price, "font-size:16px;margin-bottom:4px;color:black;font-weight:bold;"),
       createTooltipLine("Time", dateStr, "margin-bottom:2px;color:black;")
     ];
 
-    Object.keys(config.Tooltip).forEach(key => {
-      const t = config.Tooltip[key];
-      const value = typeof t.parseValue === "function" ? t.parseValue(rawData[t.value]) : rawData[t.value];
-      lines.push(createTooltipLine(t.label, value, t.style));
-    });
+    for (const [key, column] of Object.entries(globalCfg.Tooltip)) {
+      const value = typeof column.parseValue === "function" ? column.parseValue(rawData[column.value]) : rawData[column.value];
+      lines.push(createTooltipLine(column.label, value, column.style));
+    }
 
-    toolTip.innerHTML = lines.join("");
-    toolTip.style.display = "block";
-    toolTip.style.left = `${param.point.x + 15}px`;
-    toolTip.style.top = "1rem";
+    return lines.join("");
   });
 
-  // Lines
-  Object.keys(line).forEach(key => {
-    const options = config.LineSeries[key] || {};
-    const lineObj = new Line(chart, line[key], { ...defaultLineOptions, ...options }, `line-${key}`);
-    lineObj.render();
-  });
+  window.chart = chart; 
 }

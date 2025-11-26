@@ -21,11 +21,3 @@ export function parseFixed(value, fixed) {
   const num = Number(value);
   return !isNaN(num) ? num.toFixed(fixed) : "";
 }
-
-/**
- * Get the number of fraction digits for formatting
- * @returns {number} number of fraction digits
- */
-export function getFractionDigits() {
-  return 2;
-}

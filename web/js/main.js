@@ -2,20 +2,38 @@
 "use strict";
 
 import { parseCSV } from "./services/parser.js";
+import { getSource } from "./utils/url.js";
+import { init as initTweakpane } from "./tweakpane/tweakpane.js";
 import "../scss/bootstrap.scss";
 
-(function init() {
-  const url = new URL(location.href);
-  const path = "dist/file";
-  const origin = location.origin;
-  const source = url.searchParams.get("source");
+/**
+ * Set chart title
+ * @param {string} title - Chart title
+ */
+function setChartTitle(title) {
   const chartTitle = document.getElementById("chartTitle");
-  const csvPath = `${origin}/${path}/${source}`;
+  if (chartTitle) chartTitle.textContent = title;
+}
 
-  if (source) {
-    window.source = source;
-    chartTitle.textContent = `${source}`;
-    console.log("Loading CSV from:", csvPath);
-    parseCSV(csvPath, window.config);
-  }
+/**
+ * Initialize chart
+ * @returns {void}
+ */
+function initChart() {
+  const source = getSource();
+  const csvUrl = `${location.origin}/dist/file/${source}`;
+
+  if (!source) return;
+
+  setChartTitle(source);
+  parseCSV(csvUrl);
+
+  document.body.addEventListener("parse:csv", () => {
+    parseCSV(csvUrl);
+  });
+};
+
+(function () {
+  initTweakpane();
+  initChart();
 })();
